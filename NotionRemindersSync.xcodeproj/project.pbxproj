@@ -7,28 +7,55 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		66AEF9232BFF2C74009153AB /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66AEF9222BFF2C74009153AB /* main.swift */; };
+		A0000001 /* NotionRemindersSyncApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001 /* NotionRemindersSyncApp.swift */; };
+		A0000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002 /* AppDelegate.swift */; };
+		A0000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000003 /* ContentView.swift */; };
+		A0000004 /* ReminderItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004 /* ReminderItem.swift */; };
+		A0000005 /* SyncMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000005 /* SyncMapping.swift */; };
+		A0000006 /* SyncRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006 /* SyncRecord.swift */; };
+		A0000007 /* NotionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000007 /* NotionModels.swift */; };
+		A0000008 /* RemindersService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008 /* RemindersService.swift */; };
+		A0000009 /* NotionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000009 /* NotionClient.swift */; };
+		A0000010 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010 /* KeychainService.swift */; };
+		A0000011 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011 /* SyncEngine.swift */; };
+		A0000012 /* SyncScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* SyncScheduler.swift */; };
+		A0000013 /* ConflictResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* ConflictResolver.swift */; };
+		A0000014 /* SyncStateCloudKitStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* SyncStateCloudKitStore.swift */; };
+		A0000020 /* LocalSyncStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* LocalSyncStateStore.swift */; };
+		A0000015 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* GeneralSettingsView.swift */; };
+		A0000016 /* NotionAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* NotionAuthView.swift */; };
+		A0000017 /* MappingsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* MappingsSettingsView.swift */; };
+		A0000018 /* SyncStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* SyncStatusView.swift */; };
+		A0000019 /* MappingEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000019 /* MappingEditorSheet.swift */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		66AEF91D2BFF2C74009153AB /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		66AEF91F2BFF2C74009153AB /* NotionRemindersSync */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NotionRemindersSync; sourceTree = BUILT_PRODUCTS_DIR; };
-		66AEF9222BFF2C74009153AB /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A1000000 /* NotionRemindersSync.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NotionRemindersSync.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000001 /* NotionRemindersSyncApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionRemindersSyncApp.swift; sourceTree = "<group>"; };
+		A1000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A1000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1000004 /* ReminderItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderItem.swift; sourceTree = "<group>"; };
+		A1000005 /* SyncMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMapping.swift; sourceTree = "<group>"; };
+		A1000006 /* SyncRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecord.swift; sourceTree = "<group>"; };
+		A1000007 /* NotionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionModels.swift; sourceTree = "<group>"; };
+		A1000008 /* RemindersService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersService.swift; sourceTree = "<group>"; };
+		A1000009 /* NotionClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionClient.swift; sourceTree = "<group>"; };
+		A1000010 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		A1000011 /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngine.swift; sourceTree = "<group>"; };
+		A1000012 /* SyncScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncScheduler.swift; sourceTree = "<group>"; };
+		A1000013 /* ConflictResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictResolver.swift; sourceTree = "<group>"; };
+		A1000014 /* SyncStateCloudKitStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStateCloudKitStore.swift; sourceTree = "<group>"; };
+		A1000021 /* LocalSyncStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSyncStateStore.swift; sourceTree = "<group>"; };
+		A1000015 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		A1000016 /* NotionAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionAuthView.swift; sourceTree = "<group>"; };
+		A1000017 /* MappingsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MappingsSettingsView.swift; sourceTree = "<group>"; };
+		A1000018 /* SyncStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusView.swift; sourceTree = "<group>"; };
+		A1000019 /* MappingEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MappingEditorSheet.swift; sourceTree = "<group>"; };
+		A1000020 /* NotionRemindersSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotionRemindersSync.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		66AEF91C2BFF2C74009153AB /* Frameworks */ = {
+		A2000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -38,40 +65,116 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		66AEF9162BFF2C74009153AB = {
+		A3000001 = {
 			isa = PBXGroup;
 			children = (
-				66AEF9212BFF2C74009153AB /* NotionRemindersSync */,
-				66AEF9202BFF2C74009153AB /* Products */,
+				A3000002 /* NotionRemindersSync */,
+				A3000003 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		66AEF9202BFF2C74009153AB /* Products */ = {
+		A3000002 /* NotionRemindersSync */ = {
 			isa = PBXGroup;
 			children = (
-				66AEF91F2BFF2C74009153AB /* NotionRemindersSync */,
+				A1000001 /* NotionRemindersSyncApp.swift */,
+				A1000020 /* NotionRemindersSync.entitlements */,
+				A3000004 /* App */,
+				A3000005 /* Models */,
+				A3000006 /* Services */,
+				A3000007 /* Persistence */,
+				A3000008 /* Views */,
+			);
+			path = NotionRemindersSync;
+			sourceTree = "<group>";
+		};
+		A3000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000 /* NotionRemindersSync.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		66AEF9212BFF2C74009153AB /* NotionRemindersSync */ = {
+		A3000004 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				66AEF9222BFF2C74009153AB /* main.swift */,
+				A1000002 /* AppDelegate.swift */,
+				A1000003 /* ContentView.swift */,
 			);
-			path = NotionRemindersSync;
+			path = App;
+			sourceTree = "<group>";
+		};
+		A3000005 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A1000004 /* ReminderItem.swift */,
+				A1000005 /* SyncMapping.swift */,
+				A1000006 /* SyncRecord.swift */,
+				A1000007 /* NotionModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A3000006 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A1000008 /* RemindersService.swift */,
+				A1000009 /* NotionClient.swift */,
+				A1000010 /* KeychainService.swift */,
+				A1000011 /* SyncEngine.swift */,
+				A1000012 /* SyncScheduler.swift */,
+				A1000013 /* ConflictResolver.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A3000007 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				A1000014 /* SyncStateCloudKitStore.swift */,
+				A1000021 /* LocalSyncStateStore.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		A3000008 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A3000009 /* Settings */,
+				A3000010 /* Mapping */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A3000009 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A1000015 /* GeneralSettingsView.swift */,
+				A1000016 /* NotionAuthView.swift */,
+				A1000017 /* MappingsSettingsView.swift */,
+				A1000018 /* SyncStatusView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		A3000010 /* Mapping */ = {
+			isa = PBXGroup;
+			children = (
+				A1000019 /* MappingEditorSheet.swift */,
+			);
+			path = Mapping;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		66AEF91E2BFF2C74009153AB /* NotionRemindersSync */ = {
+		A4000001 /* NotionRemindersSync */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 66AEF9262BFF2C74009153AB /* Build configuration list for PBXNativeTarget "NotionRemindersSync" */;
+			buildConfigurationList = A5000003 /* Build configuration list for PBXNativeTarget "NotionRemindersSync" */;
 			buildPhases = (
-				66AEF91B2BFF2C74009153AB /* Sources */,
-				66AEF91C2BFF2C74009153AB /* Frameworks */,
-				66AEF91D2BFF2C74009153AB /* CopyFiles */,
+				A4000002 /* Sources */,
+				A2000001 /* Frameworks */,
+				A4000003 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -79,25 +182,25 @@
 			);
 			name = NotionRemindersSync;
 			productName = NotionRemindersSync;
-			productReference = 66AEF91F2BFF2C74009153AB /* NotionRemindersSync */;
-			productType = "com.apple.product-type.tool";
+			productReference = A1000000 /* NotionRemindersSync.app */;
+			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		66AEF9172BFF2C74009153AB /* Project object */ = {
+		A6000001 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1540;
 				LastUpgradeCheck = 1540;
 				TargetAttributes = {
-					66AEF91E2BFF2C74009153AB = {
+					A4000001 = {
 						CreatedOnToolsVersion = 15.4;
 					};
 				};
 			};
-			buildConfigurationList = 66AEF91A2BFF2C74009153AB /* Build configuration list for PBXProject "NotionRemindersSync" */;
+			buildConfigurationList = A5000001 /* Build configuration list for PBXProject "NotionRemindersSync" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -105,29 +208,58 @@
 				en,
 				Base,
 			);
-			mainGroup = 66AEF9162BFF2C74009153AB;
-			productRefGroup = 66AEF9202BFF2C74009153AB /* Products */;
+			mainGroup = A3000001;
+			productRefGroup = A3000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				66AEF91E2BFF2C74009153AB /* NotionRemindersSync */,
+				A4000001 /* NotionRemindersSync */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		A4000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
-		66AEF91B2BFF2C74009153AB /* Sources */ = {
+		A4000002 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				66AEF9232BFF2C74009153AB /* main.swift in Sources */,
+				A0000001 /* NotionRemindersSyncApp.swift in Sources */,
+				A0000002 /* AppDelegate.swift in Sources */,
+				A0000003 /* ContentView.swift in Sources */,
+				A0000004 /* ReminderItem.swift in Sources */,
+				A0000005 /* SyncMapping.swift in Sources */,
+				A0000006 /* SyncRecord.swift in Sources */,
+				A0000007 /* NotionModels.swift in Sources */,
+				A0000008 /* RemindersService.swift in Sources */,
+				A0000009 /* NotionClient.swift in Sources */,
+				A0000010 /* KeychainService.swift in Sources */,
+				A0000011 /* SyncEngine.swift in Sources */,
+				A0000012 /* SyncScheduler.swift in Sources */,
+				A0000013 /* ConflictResolver.swift in Sources */,
+				A0000014 /* SyncStateCloudKitStore.swift in Sources */,
+				A0000020 /* LocalSyncStateStore.swift in Sources */,
+				A0000015 /* GeneralSettingsView.swift in Sources */,
+				A0000016 /* NotionAuthView.swift in Sources */,
+				A0000017 /* MappingsSettingsView.swift in Sources */,
+				A0000018 /* SyncStatusView.swift in Sources */,
+				A0000019 /* MappingEditorSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		66AEF9242BFF2C74009153AB /* Debug */ = {
+		A7000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -180,7 +312,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -190,7 +322,7 @@
 			};
 			name = Debug;
 		};
-		66AEF9252BFF2C74009153AB /* Release */ = {
+		A7000002 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -237,7 +369,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -245,24 +377,58 @@
 			};
 			name = Release;
 		};
-		66AEF9272BFF2C74009153AB /* Debug */ = {
+		A7000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = NotionRemindersSync/NotionRemindersSync.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 62696V9M3X;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Notion Reminders Sync";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSRemindersUsageDescription = "NotionRemindersSync needs access to your Reminders to sync them with Notion.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.adamfarmer.notionremindersync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		66AEF9282BFF2C74009153AB /* Release */ = {
+		A7000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = NotionRemindersSync/NotionRemindersSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 62696V9M3X;
 				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Notion Reminders Sync";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSRemindersUsageDescription = "NotionRemindersSync needs access to your Reminders to sync them with Notion.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.adamfarmer.notionremindersync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -270,25 +436,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		66AEF91A2BFF2C74009153AB /* Build configuration list for PBXProject "NotionRemindersSync" */ = {
+		A5000001 /* Build configuration list for PBXProject "NotionRemindersSync" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				66AEF9242BFF2C74009153AB /* Debug */,
-				66AEF9252BFF2C74009153AB /* Release */,
+				A7000001 /* Debug */,
+				A7000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		66AEF9262BFF2C74009153AB /* Build configuration list for PBXNativeTarget "NotionRemindersSync" */ = {
+		A5000003 /* Build configuration list for PBXNativeTarget "NotionRemindersSync" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				66AEF9272BFF2C74009153AB /* Debug */,
-				66AEF9282BFF2C74009153AB /* Release */,
+				A7000003 /* Debug */,
+				A7000004 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 66AEF9172BFF2C74009153AB /* Project object */;
+	rootObject = A6000001 /* Project object */;
 }
