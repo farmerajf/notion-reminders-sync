@@ -7,7 +7,7 @@ struct MappingsSettingsView: View {
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
 
-    private let syncStateStore = LocalSyncStateStore.shared
+    private var syncStateStore: LocalSyncStateStore { LocalSyncStateStore.shared }
 
     var body: some View {
         List {

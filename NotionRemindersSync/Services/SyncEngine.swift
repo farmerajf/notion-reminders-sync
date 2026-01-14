@@ -316,10 +316,7 @@ final class SyncEngine {
 
         // Due date (optional)
         if let dueDatePropertyId = mapping.dueDatePropertyId, let dueDate = item.dueDate {
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.formatOptions = item.hasDueTime ? [.withInternetDateTime] : [.withFullDate]
-            let dateString = dateFormatter.string(from: dueDate)
-
+            let dateString = formatDateForNotion(dueDate, includeTime: item.hasDueTime)
             properties[dueDatePropertyId] = .date(
                 NotionPropertyValue.DateValue(start: dateString)
             )
@@ -357,9 +354,7 @@ final class SyncEngine {
         // Due date
         if let dueDatePropertyId = mapping.dueDatePropertyId {
             if let dueDate = item.dueDate {
-                let dateFormatter = ISO8601DateFormatter()
-                dateFormatter.formatOptions = item.hasDueTime ? [.withInternetDateTime] : [.withFullDate]
-                let dateString = dateFormatter.string(from: dueDate)
+                let dateString = formatDateForNotion(dueDate, includeTime: item.hasDueTime)
                 properties[dueDatePropertyId] = .date(NotionPropertyValue.DateValue(start: dateString))
             } else {
                 properties[dueDatePropertyId] = .date(nil)
@@ -556,6 +551,25 @@ final class SyncEngine {
         }
         let compactId = page.id.replacingOccurrences(of: "-", with: "")
         return URL(string: "https://www.notion.so/\(compactId)")
+    }
+
+    /// Formats a date for Notion API, respecting local timezone for date-only values
+    private func formatDateForNotion(_ date: Date, includeTime: Bool) -> String {
+        if includeTime {
+            // For datetime values, use ISO8601 with timezone
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime]
+            return formatter.string(from: date)
+        } else {
+            // For date-only values, use local calendar to preserve the correct day
+            // This prevents timezone shifts (e.g., "tomorrow" becoming "today" in UTC)
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month, .day], from: date)
+            return String(format: "%04d-%02d-%02d",
+                          components.year ?? 0,
+                          components.month ?? 0,
+                          components.day ?? 0)
+        }
     }
 
     /// Backfills short n:// URLs into Apple Reminder notes (one-way sync from Notion to Apple).

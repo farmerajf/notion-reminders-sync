@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct SyncStatusView: View {
-    @State private var syncEngine = SyncEngine.shared
-    private let syncStateStore = LocalSyncStateStore.shared
+    private let syncEngine = SyncEngine.shared
+    private var syncStateStore: LocalSyncStateStore { LocalSyncStateStore.shared }
 
     @State private var syncHistory: [SyncHistoryEntry] = []
     @State private var errorMessage: String? = nil
@@ -45,8 +45,10 @@ struct SyncStatusView: View {
             loadState()
         }
         .onChange(of: syncEngine.isSyncing) { wasSyncing, isSyncing in
+            print("[SyncStatusView] onChange: isSyncing changed from \(wasSyncing) to \(isSyncing)")
             // Reload history when sync completes (transitions from syncing to idle)
             if wasSyncing && !isSyncing {
+                print("[SyncStatusView] onChange: sync completed, reloading state")
                 loadState()
             }
         }
@@ -58,8 +60,14 @@ struct SyncStatusView: View {
         }
         // Load sync history from the first mapping (or could aggregate all)
         let mappings = syncStateStore.getSyncMappings()
+        print("[SyncStatusView] loadState: found \(mappings.count) mappings")
         if let firstMapping = mappings.first {
-            syncHistory = Array(syncStateStore.getSyncHistory(forMappingId: firstMapping.id, limit: 20))
+            let history = syncStateStore.getSyncHistory(forMappingId: firstMapping.id, limit: 20)
+            print("[SyncStatusView] loadState: found \(history.count) history entries for mapping \(firstMapping.id)")
+            syncHistory = Array(history)
+        } else {
+            print("[SyncStatusView] loadState: no mappings found, cannot load history")
+            syncHistory = []
         }
     }
 
@@ -115,11 +123,14 @@ struct SyncStatusView: View {
     }
 
     private func syncNow() {
+        print("[SyncStatusView] syncNow called")
         errorMessage = nil
 
         Task {
             do {
+                print("[SyncStatusView] Starting syncAll...")
                 try await syncEngine.syncAll()
+                print("[SyncStatusView] syncAll completed successfully")
 
                 await MainActor.run {
                     loadState() // Reload history

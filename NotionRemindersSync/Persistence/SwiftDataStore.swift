@@ -18,7 +18,8 @@ final class SwiftDataStore {
             ])
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
-                isStoredInMemoryOnly: false
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .none
             )
             modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
             modelContext = modelContainer.mainContext
@@ -64,7 +65,12 @@ final class SwiftDataStore {
         }
 
         try modelContext.save()
-        print("[SwiftDataStore] Saved mapping: \(mapping.id)")
+        print("[SwiftDataStore] Saved mapping: \(mapping.id) - \(mapping.appleListName) <-> \(mapping.notionDatabaseName)")
+
+        // Verify save by immediately fetching
+        let verifyDescriptor = FetchDescriptor<SDSyncMapping>()
+        let allMappings = try modelContext.fetch(verifyDescriptor)
+        print("[SwiftDataStore] Verification: \(allMappings.count) total mappings in store")
     }
 
     func getSyncMappings() -> [SyncMapping] {
@@ -74,7 +80,10 @@ final class SwiftDataStore {
 
         do {
             let results = try modelContext.fetch(descriptor)
-            print("[SwiftDataStore] Loaded \(results.count) mappings")
+            print("[SwiftDataStore] getSyncMappings: fetched \(results.count) from database")
+            for (i, m) in results.enumerated() {
+                print("[SwiftDataStore]   [\(i)] id=\(m.id) name=\(m.appleListName) enabled=\(m.isEnabled)")
+            }
             return results.map { $0.toSyncMapping() }
         } catch {
             print("[SwiftDataStore] Error fetching mappings: \(error)")
@@ -118,6 +127,13 @@ final class SwiftDataStore {
         if let existing = try modelContext.fetch(descriptor).first {
             existing.update(from: record)
         } else {
+            // Find the parent mapping to set the relationship
+            let mappingId = record.mappingId
+            let mappingDescriptor = FetchDescriptor<SDSyncMapping>(
+                predicate: #Predicate { $0.id == mappingId }
+            )
+            let sdMapping = try modelContext.fetch(mappingDescriptor).first
+
             let sdRecord = SDSyncRecord(
                 id: record.id,
                 mappingId: record.mappingId,
@@ -129,6 +145,10 @@ final class SwiftDataStore {
                 lastSyncDate: record.lastSyncDate,
                 syncStatus: record.syncStatus
             )
+
+            // Set the relationship for proper SwiftData persistence
+            sdRecord.mapping = sdMapping
+
             modelContext.insert(sdRecord)
         }
 
@@ -229,6 +249,18 @@ final class SwiftDataStore {
     // MARK: - SyncHistory
 
     func saveSyncHistoryEntry(_ entry: SyncHistoryEntry) throws {
+        print("[SwiftDataStore] saveSyncHistoryEntry: saving entry for mapping \(entry.mappingId)")
+
+        // Find the parent mapping
+        let mappingId = entry.mappingId
+        let mappingDescriptor = FetchDescriptor<SDSyncMapping>(
+            predicate: #Predicate { $0.id == mappingId }
+        )
+        guard let sdMapping = try modelContext.fetch(mappingDescriptor).first else {
+            print("[SwiftDataStore] saveSyncHistoryEntry: ERROR - mapping not found for id \(entry.mappingId)")
+            return
+        }
+
         let sdEntry = SDSyncHistoryEntry(
             id: entry.id,
             timestamp: entry.timestamp,
@@ -240,12 +272,22 @@ final class SwiftDataStore {
             conflicts: entry.conflicts,
             errors: entry.errors
         )
-        modelContext.insert(sdEntry)
 
-        // Trim old entries (keep last 100 per mapping)
-        try trimHistoryIfNeeded(mappingId: entry.mappingId)
+        // Add through the relationship array - this is the SwiftData-native approach
+        sdMapping.historyEntries.append(sdEntry)
+        print("[SwiftDataStore] saveSyncHistoryEntry: appended entry \(entry.id) to mapping.historyEntries (now \(sdMapping.historyEntries.count) entries)")
+
+        // Temporarily disabled to debug persistence issue
+        // try trimHistoryIfNeeded(mappingId: entry.mappingId)
 
         try modelContext.save()
+        print("[SwiftDataStore] saveSyncHistoryEntry: saved successfully")
+
+        // Verify save - check both ways
+        let verifyDescriptor = FetchDescriptor<SDSyncHistoryEntry>()
+        let allEntries = try modelContext.fetch(verifyDescriptor)
+        print("[SwiftDataStore] saveSyncHistoryEntry: verification via fetch shows \(allEntries.count) entries")
+        print("[SwiftDataStore] saveSyncHistoryEntry: verification via relationship shows \(sdMapping.historyEntries.count) entries")
     }
 
     private func trimHistoryIfNeeded(mappingId: UUID) throws {
@@ -269,7 +311,9 @@ final class SwiftDataStore {
         descriptor.fetchLimit = limit
 
         do {
-            return try modelContext.fetch(descriptor).map { $0.toSyncHistoryEntry() }
+            let results = try modelContext.fetch(descriptor)
+            print("[SwiftDataStore] getSyncHistory: fetched \(results.count) entries for mapping \(mappingId)")
+            return results.map { $0.toSyncHistoryEntry() }
         } catch {
             print("[SwiftDataStore] Error fetching history: \(error)")
             return []
