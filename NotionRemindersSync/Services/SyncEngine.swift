@@ -2,6 +2,7 @@ import Foundation
 import EventKit
 
 /// Main sync orchestrator that coordinates syncing between Apple Reminders and Notion
+@MainActor
 @Observable
 final class SyncEngine {
     static let shared = SyncEngine()

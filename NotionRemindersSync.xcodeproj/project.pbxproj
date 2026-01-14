@@ -21,6 +21,8 @@
 		A0000012 /* SyncScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* SyncScheduler.swift */; };
 		A0000013 /* ConflictResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* ConflictResolver.swift */; };
 		A0000020 /* LocalSyncStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* LocalSyncStateStore.swift */; };
+		A0000023 /* SwiftDataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000024 /* SwiftDataModels.swift */; };
+		A0000024 /* SwiftDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000025 /* SwiftDataStore.swift */; };
 		A0000015 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* GeneralSettingsView.swift */; };
 		A0000016 /* NotionAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* NotionAuthView.swift */; };
 		A0000017 /* MappingsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* MappingsSettingsView.swift */; };
@@ -45,6 +47,8 @@
 		A1000012 /* SyncScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncScheduler.swift; sourceTree = "<group>"; };
 		A1000013 /* ConflictResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictResolver.swift; sourceTree = "<group>"; };
 		A1000021 /* LocalSyncStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSyncStateStore.swift; sourceTree = "<group>"; };
+		A1000024 /* SwiftDataModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataModels.swift; sourceTree = "<group>"; };
+		A1000025 /* SwiftDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataStore.swift; sourceTree = "<group>"; };
 		A1000015 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A1000016 /* NotionAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionAuthView.swift; sourceTree = "<group>"; };
 		A1000017 /* MappingsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MappingsSettingsView.swift; sourceTree = "<group>"; };
@@ -134,6 +138,8 @@
 			isa = PBXGroup;
 			children = (
 				A1000021 /* LocalSyncStateStore.swift */,
+				A1000024 /* SwiftDataModels.swift */,
+				A1000025 /* SwiftDataStore.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -249,6 +255,8 @@
 				A0000012 /* SyncScheduler.swift in Sources */,
 				A0000013 /* ConflictResolver.swift in Sources */,
 				A0000020 /* LocalSyncStateStore.swift in Sources */,
+				A0000023 /* SwiftDataModels.swift in Sources */,
+				A0000024 /* SwiftDataStore.swift in Sources */,
 				A0000015 /* GeneralSettingsView.swift in Sources */,
 				A0000016 /* NotionAuthView.swift in Sources */,
 				A0000017 /* MappingsSettingsView.swift in Sources */,
