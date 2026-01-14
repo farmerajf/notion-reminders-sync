@@ -20,7 +20,6 @@
 		A0000011 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011 /* SyncEngine.swift */; };
 		A0000012 /* SyncScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* SyncScheduler.swift */; };
 		A0000013 /* ConflictResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* ConflictResolver.swift */; };
-		A0000014 /* SyncStateCloudKitStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* SyncStateCloudKitStore.swift */; };
 		A0000020 /* LocalSyncStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* LocalSyncStateStore.swift */; };
 		A0000015 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* GeneralSettingsView.swift */; };
 		A0000016 /* NotionAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* NotionAuthView.swift */; };
@@ -45,7 +44,6 @@
 		A1000011 /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngine.swift; sourceTree = "<group>"; };
 		A1000012 /* SyncScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncScheduler.swift; sourceTree = "<group>"; };
 		A1000013 /* ConflictResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictResolver.swift; sourceTree = "<group>"; };
-		A1000014 /* SyncStateCloudKitStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStateCloudKitStore.swift; sourceTree = "<group>"; };
 		A1000021 /* LocalSyncStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSyncStateStore.swift; sourceTree = "<group>"; };
 		A1000015 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A1000016 /* NotionAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionAuthView.swift; sourceTree = "<group>"; };
@@ -135,7 +133,6 @@
 		A3000007 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
-				A1000014 /* SyncStateCloudKitStore.swift */,
 				A1000021 /* LocalSyncStateStore.swift */,
 			);
 			path = Persistence;
@@ -251,7 +248,6 @@
 				A0000011 /* SyncEngine.swift in Sources */,
 				A0000012 /* SyncScheduler.swift in Sources */,
 				A0000013 /* ConflictResolver.swift in Sources */,
-				A0000014 /* SyncStateCloudKitStore.swift in Sources */,
 				A0000020 /* LocalSyncStateStore.swift in Sources */,
 				A0000015 /* GeneralSettingsView.swift in Sources */,
 				A0000016 /* NotionAuthView.swift in Sources */,

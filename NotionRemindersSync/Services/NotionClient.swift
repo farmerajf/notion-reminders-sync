@@ -168,50 +168,23 @@ final class NotionClient {
         path: String,
         body: (some Encodable)? = nil as Empty?
     ) async throws -> T {
-        guard let apiKey = apiKey else {
-            throw NotionError.noAPIKey
-        }
-
-        guard let url = URL(string: baseURL + path) else {
-            throw NotionError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue(apiVersion, forHTTPHeaderField: "Notion-Version")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        if let body = body {
-            request.httpBody = try encoder.encode(body)
-        }
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw NotionError.invalidResponse
-        }
-
-        if httpResponse.statusCode == 429 {
-            // Rate limited - extract retry-after if available
-            let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After")
-            throw NotionError.rateLimited(retryAfter: retryAfter)
-        }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            if let errorResponse = try? decoder.decode(NotionErrorResponse.self, from: data) {
-                throw NotionError.apiError(code: errorResponse.code, message: errorResponse.message)
-            }
-            throw NotionError.httpError(statusCode: httpResponse.statusCode)
-        }
-
-        return try decoder.decode(T.self, from: data)
+        let bodyData = try body.map { try encoder.encode($0) }
+        return try await performRequest(method: method, path: path, bodyData: bodyData)
     }
 
     private func request<T: Decodable>(
         method: String,
         path: String,
         bodyDict: [String: Any]?
+    ) async throws -> T {
+        let bodyData = try bodyDict.map { try JSONSerialization.data(withJSONObject: $0) }
+        return try await performRequest(method: method, path: path, bodyData: bodyData)
+    }
+
+    private func performRequest<T: Decodable>(
+        method: String,
+        path: String,
+        bodyData: Data?
     ) async throws -> T {
         guard let apiKey = apiKey else {
             throw NotionError.noAPIKey
@@ -226,10 +199,7 @@ final class NotionClient {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue(apiVersion, forHTTPHeaderField: "Notion-Version")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        if let bodyDict = bodyDict {
-            request.httpBody = try JSONSerialization.data(withJSONObject: bodyDict)
-        }
+        request.httpBody = bodyData
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -295,15 +265,6 @@ private struct UserResponse: Decodable {
     let id: String
     let name: String?
     let type: String
-}
-
-private struct SearchRequest: Encodable {
-    let filter: SearchFilter
-}
-
-private struct SearchFilter: Encodable {
-    let property: String
-    let value: String
 }
 
 private struct SearchResponse: Decodable {

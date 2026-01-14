@@ -33,7 +33,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             forTaskWithIdentifier: Self.backgroundTaskIdentifier,
             using: nil
         ) { task in
-            self.handleBackgroundRefresh(task: task as! BGAppRefreshTask)
+            self.handleBackgroundTask(task, scheduleNext: self.scheduleBackgroundRefresh)
         }
         print("[AppDelegate] Registered background task: \(Self.backgroundTaskIdentifier)")
 
@@ -41,18 +41,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             forTaskWithIdentifier: Self.backgroundProcessingIdentifier,
             using: nil
         ) { task in
-            self.handleBackgroundProcessing(task: task as! BGProcessingTask)
+            self.handleBackgroundTask(task, scheduleNext: self.scheduleBackgroundProcessing)
         }
         print("[AppDelegate] Registered background task: \(Self.backgroundProcessingIdentifier)")
     }
 
-    private func handleBackgroundRefresh(task: BGAppRefreshTask) {
-        print("[AppDelegate] Handling background refresh")
+    private func handleBackgroundTask(_ task: BGTask, scheduleNext: @escaping () -> Void) {
+        print("[AppDelegate] Handling background task: \(task.identifier)")
+        scheduleNext()
 
-        // Schedule the next refresh
-        scheduleBackgroundRefresh()
-
-        // Create sync task
         let syncTask = Task {
             do {
                 try await SyncEngine.shared.syncAll()
@@ -64,32 +61,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             }
         }
 
-        // Handle task expiration
         task.expirationHandler = {
             print("[AppDelegate] Background task expired")
-            syncTask.cancel()
-        }
-    }
-
-    private func handleBackgroundProcessing(task: BGProcessingTask) {
-        print("[AppDelegate] Handling background processing")
-
-        // Schedule the next processing task
-        scheduleBackgroundProcessing()
-
-        let syncTask = Task {
-            do {
-                try await SyncEngine.shared.syncAll()
-                print("[AppDelegate] Background processing sync completed successfully")
-                task.setTaskCompleted(success: true)
-            } catch {
-                print("[AppDelegate] Background processing sync failed: \(error)")
-                task.setTaskCompleted(success: false)
-            }
-        }
-
-        task.expirationHandler = {
-            print("[AppDelegate] Background processing task expired")
             syncTask.cancel()
         }
     }

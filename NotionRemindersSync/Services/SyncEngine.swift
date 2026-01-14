@@ -512,7 +512,6 @@ final class SyncEngine {
     enum SyncError: LocalizedError {
         case alreadySyncing
         case appleListNotFound(String)
-        case notionDatabaseNotFound(String)
         case missingAppleReminderId
         case missingNotionPageId
 
@@ -522,8 +521,6 @@ final class SyncEngine {
                 return "A sync is already in progress"
             case .appleListNotFound(let id):
                 return "Apple Reminders list not found: \(id)"
-            case .notionDatabaseNotFound(let id):
-                return "Notion database not found: \(id)"
             case .missingAppleReminderId:
                 return "Missing Apple Reminder ID"
             case .missingNotionPageId:

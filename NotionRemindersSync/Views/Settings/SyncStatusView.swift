@@ -44,6 +44,12 @@ struct SyncStatusView: View {
         .onAppear {
             loadState()
         }
+        .onChange(of: syncEngine.isSyncing) { wasSyncing, isSyncing in
+            // Reload history when sync completes (transitions from syncing to idle)
+            if wasSyncing && !isSyncing {
+                loadState()
+            }
+        }
     }
 
     private func loadState() {

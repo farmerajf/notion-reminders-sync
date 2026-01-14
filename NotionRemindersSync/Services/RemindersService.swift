@@ -7,18 +7,11 @@ final class RemindersService {
     static let shared = RemindersService()
 
     private let eventStore = EKEventStore()
-    private var changeObserver: NSObjectProtocol?
 
     private(set) var authorizationStatus: EKAuthorizationStatus = .notDetermined
 
     private init() {
         updateAuthorizationStatus()
-    }
-
-    deinit {
-        if let observer = changeObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
     }
 
     // MARK: - Authorization
@@ -146,27 +139,6 @@ final class RemindersService {
         try deleteReminder(reminder)
     }
 
-    // MARK: - Change Observation
-
-    func observeChanges(handler: @escaping () -> Void) -> NSObjectProtocol {
-        let observer = NotificationCenter.default.addObserver(
-            forName: .EKEventStoreChanged,
-            object: eventStore,
-            queue: .main
-        ) { _ in
-            handler()
-        }
-        changeObserver = observer
-        return observer
-    }
-
-    func stopObservingChanges() {
-        if let observer = changeObserver {
-            NotificationCenter.default.removeObserver(observer)
-            changeObserver = nil
-        }
-    }
-
     // MARK: - Conversion
 
     func toReminderItem(_ reminder: EKReminder) -> ReminderItem {
@@ -224,7 +196,6 @@ final class RemindersService {
         case unknownAuthorizationStatus
         case fetchFailed
         case reminderNotFound
-        case saveFailed
 
         var errorDescription: String? {
             switch self {
@@ -236,8 +207,6 @@ final class RemindersService {
                 return "Failed to fetch reminders."
             case .reminderNotFound:
                 return "Reminder not found."
-            case .saveFailed:
-                return "Failed to save reminder."
             }
         }
     }
