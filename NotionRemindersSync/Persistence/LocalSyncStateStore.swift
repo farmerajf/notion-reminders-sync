@@ -10,11 +10,6 @@ final class LocalSyncStateStore {
 
     private init() {}
 
-    /// Call this on app launch to migrate any existing UserDefaults data
-    func migrateIfNeeded() {
-        swiftDataStore.migrateFromUserDefaultsIfNeeded()
-    }
-
     // MARK: - SyncMapping CRUD
 
     func saveSyncMapping(_ mapping: SyncMapping) throws {

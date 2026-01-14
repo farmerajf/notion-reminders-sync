@@ -28,99 +28,6 @@ final class SwiftDataStore {
         }
     }
 
-    // MARK: - Migration from UserDefaults
-
-    func migrateFromUserDefaultsIfNeeded() {
-        let migrationKey = "swiftDataMigrationCompleted"
-        guard !UserDefaults.standard.bool(forKey: migrationKey) else {
-            print("[SwiftDataStore] Migration already completed")
-            return
-        }
-
-        print("[SwiftDataStore] Starting migration from UserDefaults...")
-
-        // Load existing data from UserDefaults
-        let legacyStore = LegacyUserDefaultsReader()
-        let mappings = legacyStore.getMappings()
-        let records = legacyStore.getRecords()
-        let history = legacyStore.getHistory()
-
-        print("[SwiftDataStore] Found \(mappings.count) mappings, \(records.count) records, \(history.count) history entries to migrate")
-
-        // Migrate mappings
-        for mapping in mappings {
-            let sdMapping = SDSyncMapping(
-                id: mapping.id,
-                appleListId: mapping.appleListId,
-                appleListName: mapping.appleListName,
-                notionDatabaseId: mapping.notionDatabaseId,
-                notionDatabaseName: mapping.notionDatabaseName,
-                isEnabled: mapping.isEnabled,
-                lastSyncDate: mapping.lastSyncDate,
-                createdAt: mapping.createdAt,
-                titlePropertyId: mapping.titlePropertyId,
-                titlePropertyName: mapping.titlePropertyName,
-                dueDatePropertyId: mapping.dueDatePropertyId,
-                dueDatePropertyName: mapping.dueDatePropertyName,
-                priorityPropertyId: mapping.priorityPropertyId,
-                priorityPropertyName: mapping.priorityPropertyName,
-                statusPropertyId: mapping.statusPropertyId,
-                statusPropertyName: mapping.statusPropertyName,
-                statusCompletedValue: mapping.statusCompletedValue,
-                statusCompletedValues: mapping.statusCompletedValues,
-                completedPropertyId: mapping.completedPropertyId,
-                completedPropertyName: mapping.completedPropertyName
-            )
-            modelContext.insert(sdMapping)
-        }
-
-        // Migrate records
-        for record in records {
-            let sdRecord = SDSyncRecord(
-                id: record.id,
-                mappingId: record.mappingId,
-                appleReminderId: record.appleReminderId,
-                notionPageId: record.notionPageId,
-                lastSyncedHash: record.lastSyncedHash,
-                lastAppleModification: record.lastAppleModification,
-                lastNotionModification: record.lastNotionModification,
-                lastSyncDate: record.lastSyncDate,
-                syncStatus: record.syncStatus
-            )
-            modelContext.insert(sdRecord)
-        }
-
-        // Migrate history (only last 100)
-        for entry in history.prefix(100) {
-            let sdEntry = SDSyncHistoryEntry(
-                id: entry.id,
-                timestamp: entry.timestamp,
-                mappingId: entry.mappingId,
-                operation: entry.operation,
-                itemsCreated: entry.itemsCreated,
-                itemsUpdated: entry.itemsUpdated,
-                itemsDeleted: entry.itemsDeleted,
-                conflicts: entry.conflicts,
-                errors: entry.errors
-            )
-            modelContext.insert(sdEntry)
-        }
-
-        do {
-            try modelContext.save()
-            UserDefaults.standard.set(true, forKey: migrationKey)
-            print("[SwiftDataStore] Migration completed successfully")
-
-            // Clean up UserDefaults data
-            UserDefaults.standard.removeObject(forKey: "syncMappings")
-            UserDefaults.standard.removeObject(forKey: "syncRecords")
-            UserDefaults.standard.removeObject(forKey: "syncHistory")
-            print("[SwiftDataStore] Cleaned up legacy UserDefaults data")
-        } catch {
-            print("[SwiftDataStore] Migration failed: \(error)")
-        }
-    }
-
     // MARK: - SyncMapping CRUD
 
     func saveSyncMapping(_ mapping: SyncMapping) throws {
@@ -367,26 +274,5 @@ final class SwiftDataStore {
             print("[SwiftDataStore] Error fetching history: \(error)")
             return []
         }
-    }
-}
-
-// MARK: - Legacy UserDefaults Reader (for migration only)
-
-private struct LegacyUserDefaultsReader {
-    private let defaults = UserDefaults.standard
-
-    func getMappings() -> [SyncMapping] {
-        guard let data = defaults.data(forKey: "syncMappings") else { return [] }
-        return (try? JSONDecoder().decode([SyncMapping].self, from: data)) ?? []
-    }
-
-    func getRecords() -> [SyncRecord] {
-        guard let data = defaults.data(forKey: "syncRecords") else { return [] }
-        return (try? JSONDecoder().decode([SyncRecord].self, from: data)) ?? []
-    }
-
-    func getHistory() -> [SyncHistoryEntry] {
-        guard let data = defaults.data(forKey: "syncHistory") else { return [] }
-        return (try? JSONDecoder().decode([SyncHistoryEntry].self, from: data)) ?? []
     }
 }

@@ -11,11 +11,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        // Migrate from UserDefaults to SwiftData if needed
-        Task { @MainActor in
-            LocalSyncStateStore.shared.migrateIfNeeded()
-        }
-
         registerBackgroundTasks()
         syncScheduler.start()
         scheduleBackgroundTasks()
