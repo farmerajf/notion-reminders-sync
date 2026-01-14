@@ -10,41 +10,54 @@ struct MappingsSettingsView: View {
     private let syncStateStore = LocalSyncStateStore.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack {
-                Text("List Mappings")
-                    .font(.headline)
+        List {
+            if let error = errorMessage {
+                Section {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            }
 
-                Spacer()
+            if mappings.isEmpty && !isLoading {
+                emptyStateRow
+            } else {
+                ForEach(mappings) { mapping in
+                    MappingRowView(mapping: mapping)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedMapping = mapping
+                        }
+                        .contextMenu {
+                            Button("Edit") {
+                                selectedMapping = mapping
+                            }
 
+                            Button("Delete", role: .destructive) {
+                                deleteMapping(mapping)
+                            }
+                        }
+                }
+                .onDelete(perform: deleteMappings)
+            }
+        }
+        .listStyle(.insetGrouped)
+        .safeAreaInset(edge: .top) {
+            Color.clear.frame(height: 8)
+        }
+        .navigationTitle("Mappings")
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 if isLoading {
                     ProgressView()
-                        .scaleEffect(0.7)
+                        .scaleEffect(0.8)
                 }
 
                 Button(action: { showingAddSheet = true }) {
-                    Label("Add Mapping", systemImage: "plus")
+                    Image(systemName: "plus")
                 }
             }
-            .padding()
-
-            if let error = errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.horizontal)
-            }
-
-            Divider()
-
-            if mappings.isEmpty && !isLoading {
-                emptyStateView
-            } else {
-                mappingsList
-            }
         }
-        .navigationTitle("Mappings")
         .onAppear {
             loadMappings()
         }
@@ -60,53 +73,16 @@ struct MappingsSettingsView: View {
         }
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: "arrow.left.arrow.right.circle")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-
+    private var emptyStateRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text("No Mappings")
                 .font(.headline)
-
             Text("Create a mapping to sync an Apple Reminders list with a Notion database.")
-                .font(.subheadline)
+                .font(.caption)
                 .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-
-            Button(action: { showingAddSheet = true }) {
-                Label("Add Mapping", systemImage: "plus")
-            }
-            .buttonStyle(.borderedProminent)
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var mappingsList: some View {
-        List {
-            ForEach(mappings) { mapping in
-                MappingRowView(mapping: mapping)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        selectedMapping = mapping
-                    }
-                    .contextMenu {
-                        Button("Edit") {
-                            selectedMapping = mapping
-                        }
-
-                        Button("Delete", role: .destructive) {
-                            deleteMapping(mapping)
-                        }
-                    }
-            }
-            .onDelete(perform: deleteMappings)
-        }
+        .padding(.vertical, 8)
+        .listRowSeparator(.hidden)
     }
 
     private func loadMappings() {

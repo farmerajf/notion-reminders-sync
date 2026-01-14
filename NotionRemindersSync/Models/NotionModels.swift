@@ -31,12 +31,21 @@ struct NotionProperty: Identifiable, Codable, Equatable, Hashable {
 
     // For select/multi-select properties
     var options: [NotionSelectOption]?
+    // For status properties
+    var statusGroups: [NotionStatusGroup]?
 
-    init(id: String, name: String, type: String, options: [NotionSelectOption]? = nil) {
+    init(
+        id: String,
+        name: String,
+        type: String,
+        options: [NotionSelectOption]? = nil,
+        statusGroups: [NotionStatusGroup]? = nil
+    ) {
         self.id = id
         self.name = name
         self.type = type
         self.options = options
+        self.statusGroups = statusGroups
     }
 }
 
@@ -50,6 +59,21 @@ struct NotionSelectOption: Codable, Equatable, Hashable {
         self.id = id
         self.name = name
         self.color = color
+    }
+}
+
+/// Represents a status group in Notion
+struct NotionStatusGroup: Codable, Equatable, Hashable {
+    let id: String
+    let name: String
+    let color: String?
+    let optionIds: [String]
+
+    init(id: String, name: String, color: String? = nil, optionIds: [String]) {
+        self.id = id
+        self.name = name
+        self.color = color
+        self.optionIds = optionIds
     }
 }
 
@@ -85,15 +109,11 @@ struct NotionPage: Identifiable, Equatable {
 /// Represents a Notion property value
 enum NotionPropertyValue: Codable, Equatable {
     case title([RichText])
-    case richText([RichText])
-    case number(Double?)
     case select(SelectValue?)
-    case multiSelect([SelectValue])
+    case status(SelectValue?)
     case date(DateValue?)
     case checkbox(Bool)
-    case url(String?)
-    case email(String?)
-    case phone(String?)
+    case unknown
 
     struct RichText: Equatable, Codable {
         let plainText: String
@@ -161,8 +181,7 @@ enum NotionPropertyValue: Codable, Equatable {
 
     // Custom Codable implementation
     enum CodingKeys: String, CodingKey {
-        case type, title, richText = "rich_text", number, select, multiSelect = "multi_select"
-        case date, checkbox, url, email, phone = "phone_number"
+        case type, title, select, status, date, checkbox
     }
 
     init(from decoder: Decoder) throws {
@@ -173,35 +192,20 @@ enum NotionPropertyValue: Codable, Equatable {
         case "title":
             let value = try container.decode([RichText].self, forKey: .title)
             self = .title(value)
-        case "rich_text":
-            let value = try container.decode([RichText].self, forKey: .richText)
-            self = .richText(value)
-        case "number":
-            let value = try container.decodeIfPresent(Double.self, forKey: .number)
-            self = .number(value)
         case "select":
             let value = try container.decodeIfPresent(SelectValue.self, forKey: .select)
             self = .select(value)
-        case "multi_select":
-            let value = try container.decode([SelectValue].self, forKey: .multiSelect)
-            self = .multiSelect(value)
+        case "status":
+            let value = try container.decodeIfPresent(SelectValue.self, forKey: .status)
+            self = .status(value)
         case "date":
             let value = try container.decodeIfPresent(DateValue.self, forKey: .date)
             self = .date(value)
         case "checkbox":
             let value = try container.decode(Bool.self, forKey: .checkbox)
             self = .checkbox(value)
-        case "url":
-            let value = try container.decodeIfPresent(String.self, forKey: .url)
-            self = .url(value)
-        case "email":
-            let value = try container.decodeIfPresent(String.self, forKey: .email)
-            self = .email(value)
-        case "phone_number":
-            let value = try container.decodeIfPresent(String.self, forKey: .phone)
-            self = .phone(value)
         default:
-            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown property type: \(type)")
+            self = .unknown
         }
     }
 
@@ -213,24 +217,16 @@ enum NotionPropertyValue: Codable, Equatable {
         case .title(let value):
             // Write format: {"title": [{"text": {"content": "..."}}]}
             try container.encode(value, forKey: .title)
-        case .richText(let value):
-            try container.encode(value, forKey: .richText)
-        case .number(let value):
-            try container.encodeIfPresent(value, forKey: .number)
         case .select(let value):
-            try container.encodeIfPresent(value, forKey: .select)
-        case .multiSelect(let value):
-            try container.encode(value, forKey: .multiSelect)
+            try container.encode(value, forKey: .select)
+        case .status(let value):
+            try container.encode(value, forKey: .status)
         case .date(let value):
-            try container.encodeIfPresent(value, forKey: .date)
+            try container.encode(value, forKey: .date)
         case .checkbox(let value):
             try container.encode(value, forKey: .checkbox)
-        case .url(let value):
-            try container.encodeIfPresent(value, forKey: .url)
-        case .email(let value):
-            try container.encodeIfPresent(value, forKey: .email)
-        case .phone(let value):
-            try container.encodeIfPresent(value, forKey: .phone)
+        case .unknown:
+            break
         }
     }
 }
@@ -240,7 +236,7 @@ extension NotionPropertyValue {
     /// Extracts plain text from title or rich_text property
     var plainText: String? {
         switch self {
-        case .title(let richTexts), .richText(let richTexts):
+        case .title(let richTexts):
             return richTexts.map { $0.plainText }.joined()
         default:
             return nil
@@ -250,7 +246,7 @@ extension NotionPropertyValue {
     /// Extracts select value name
     var selectName: String? {
         switch self {
-        case .select(let value):
+        case .select(let value), .status(let value):
             return value?.name
         default:
             return nil

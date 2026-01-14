@@ -201,6 +201,10 @@ final class SyncStateCloudKitStore {
         record["dueDatePropertyName"] = mapping.dueDatePropertyName
         record["priorityPropertyId"] = mapping.priorityPropertyId
         record["priorityPropertyName"] = mapping.priorityPropertyName
+        record["statusPropertyId"] = mapping.statusPropertyId
+        record["statusPropertyName"] = mapping.statusPropertyName
+        record["statusCompletedValue"] = mapping.statusCompletedValue
+        record["statusCompletedValues"] = mapping.statusCompletedValues
         record["completedPropertyId"] = mapping.completedPropertyId
         record["completedPropertyName"] = mapping.completedPropertyName
         return record
@@ -234,6 +238,10 @@ final class SyncStateCloudKitStore {
             dueDatePropertyName: record["dueDatePropertyName"] as? String,
             priorityPropertyId: record["priorityPropertyId"] as? String,
             priorityPropertyName: record["priorityPropertyName"] as? String,
+            statusPropertyId: record["statusPropertyId"] as? String,
+            statusPropertyName: record["statusPropertyName"] as? String,
+            statusCompletedValue: record["statusCompletedValue"] as? String,
+            statusCompletedValues: record["statusCompletedValues"] as? [String],
             completedPropertyId: record["completedPropertyId"] as? String,
             completedPropertyName: record["completedPropertyName"] as? String
         )

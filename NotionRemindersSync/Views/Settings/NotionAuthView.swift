@@ -3,56 +3,45 @@ import SwiftUI
 struct NotionAuthView: View {
     @State private var apiKey: String = ""
     @State private var isValidating: Bool = false
-    @State private var isConnected: Bool = false
     @State private var errorMessage: String? = nil
     @State private var showingAPIKey: Bool = false
+    @State private var testResultMessage: String? = nil
+    @State private var testResultIsError: Bool = false
+    @State private var saveTask: Task<Void, Never>? = nil
 
     private let keychainService = KeychainService.shared
 
     var body: some View {
-        Form {
+        Group {
             Section {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        if showingAPIKey {
-                            TextField("Enter Notion API Key", text: $apiKey)
-                                .textFieldStyle(.roundedBorder)
-                        } else {
-                            SecureField("Enter Notion API Key", text: $apiKey)
-                                .textFieldStyle(.roundedBorder)
-                        }
-
-                        Button(action: { showingAPIKey.toggle() }) {
-                            Image(systemName: showingAPIKey ? "eye.slash" : "eye")
-                        }
-                        .buttonStyle(.borderless)
+                Group {
+                    if showingAPIKey {
+                        TextField("Integration token", text: $apiKey)
+                    } else {
+                        SecureField("Integration token", text: $apiKey)
                     }
-
-                    Text("Get your API key from [Notion Integrations](https://www.notion.so/my-integrations)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+                Toggle("Show API Key", isOn: $showingAPIKey)
             } header: {
-                Text("API Key")
+                Text("Notion")
+            } footer: {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Paste the internal integration token from Notion.")
+                    if let url = URL(string: "https://www.notion.so/my-integrations") {
+                        Link("Open Notion Integrations", destination: url)
+                    }
+                }
+                .font(.caption)
             }
 
             Section {
-                HStack {
-                    connectionStatusView
-
-                    Spacer()
-
-                    Button(action: testConnection) {
-                        HStack(spacing: 4) {
-                            if isValidating {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            }
-                            Text(isValidating ? "Testing..." : "Test Connection")
-                        }
-                    }
-                    .disabled(apiKey.isEmpty || isValidating)
+                Button(action: testConnection) {
+                    Text(isValidating ? "Testing..." : "Test Connection")
                 }
+                .disabled(apiKey.isEmpty || isValidating)
 
                 if let error = errorMessage {
                     Text(error)
@@ -60,70 +49,53 @@ struct NotionAuthView: View {
                         .foregroundColor(.red)
                 }
             } header: {
-                Text("Connection Status")
-            }
-
-            Section {
-                HStack {
-                    Button("Save API Key") {
-                        saveAPIKey()
-                    }
-                    .disabled(apiKey.isEmpty)
-
-                    if isConnected {
-                        Button("Remove API Key", role: .destructive) {
-                            removeAPIKey()
-                        }
-                    }
+                Text("Connection")
+            } footer: {
+                if let message = testResultMessage {
+                    Label(message, systemImage: testResultIsError ? "xmark.circle.fill" : "checkmark.circle.fill")
+                        .foregroundColor(testResultIsError ? .red : .green)
                 }
             }
+
         }
-        .formStyle(.grouped)
-        .navigationTitle("Notion")
-        .padding()
         .onAppear {
             loadAPIKey()
         }
-    }
-
-    @ViewBuilder
-    private var connectionStatusView: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(isConnected ? Color.green : Color.gray)
-                .frame(width: 8, height: 8)
-
-            Text(isConnected ? "Connected" : "Not Connected")
-                .font(.subheadline)
-                .foregroundColor(isConnected ? .green : .secondary)
+        .onChange(of: apiKey) { _, _ in
+            testResultMessage = nil
+            errorMessage = nil
+            scheduleAutoSave()
         }
     }
 
     private func loadAPIKey() {
         if let savedKey = keychainService.getNotionAPIKey() {
             apiKey = savedKey
-            isConnected = true
         }
     }
 
-    private func saveAPIKey() {
+    private func scheduleAutoSave() {
+        saveTask?.cancel()
+        let currentValue = apiKey
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                persistAPIKey(currentValue)
+            }
+        }
+    }
+
+    private func persistAPIKey(_ value: String) {
         do {
-            try keychainService.saveNotionAPIKey(apiKey)
-            isConnected = true
+            if value.isEmpty {
+                try keychainService.deleteNotionAPIKey()
+            } else {
+                try keychainService.saveNotionAPIKey(value)
+            }
             errorMessage = nil
         } catch {
             errorMessage = "Failed to save API key: \(error.localizedDescription)"
-        }
-    }
-
-    private func removeAPIKey() {
-        do {
-            try keychainService.deleteNotionAPIKey()
-            apiKey = ""
-            isConnected = false
-            errorMessage = nil
-        } catch {
-            errorMessage = "Failed to remove API key: \(error.localizedDescription)"
         }
     }
 
@@ -132,6 +104,7 @@ struct NotionAuthView: View {
 
         isValidating = true
         errorMessage = nil
+        testResultMessage = nil
 
         // First save the API key so NotionClient can use it
         do {
@@ -139,6 +112,7 @@ struct NotionAuthView: View {
         } catch {
             errorMessage = "Failed to save API key: \(error.localizedDescription)"
             isValidating = false
+            testResultMessage = nil
             return
         }
 
@@ -150,18 +124,19 @@ struct NotionAuthView: View {
                 await MainActor.run {
                     isValidating = false
                     if success {
-                        isConnected = true
                         errorMessage = nil
+                        testResultMessage = "Connection successful"
+                        testResultIsError = false
                     } else {
-                        isConnected = false
-                        errorMessage = "Connection test failed"
+                        testResultMessage = "Connection test failed"
+                        testResultIsError = true
                     }
                 }
             } catch {
                 await MainActor.run {
                     isValidating = false
-                    isConnected = false
-                    errorMessage = "Connection failed: \(error.localizedDescription)"
+                    testResultMessage = "Connection failed: \(error.localizedDescription)"
+                    testResultIsError = true
                     print("[NotionAuthView] Connection test error: \(error)")
                 }
             }
@@ -170,5 +145,10 @@ struct NotionAuthView: View {
 }
 
 #Preview {
-    NotionAuthView()
+    NavigationStack {
+        Form {
+            NotionAuthView()
+        }
+        .formStyle(.grouped)
+    }
 }

@@ -370,9 +370,10 @@ private struct DatabaseResponse: Decodable {
         let type: String
         let select: SelectConfig?
         let multiSelect: SelectConfig?
+        let status: StatusConfig?
 
         enum CodingKeys: String, CodingKey {
-            case id, name, type, select
+            case id, name, type, select, status
             case multiSelect = "multi_select"
         }
 
@@ -380,20 +381,54 @@ private struct DatabaseResponse: Decodable {
             let options: [OptionDef]?
         }
 
+        struct StatusConfig: Decodable {
+            let options: [OptionDef]?
+            let groups: [GroupDef]?
+        }
+
         struct OptionDef: Decodable {
             let id: String
             let name: String
             let color: String?
+        }
+
+        struct GroupDef: Decodable {
+            let id: String
+            let name: String
+            let color: String?
+            let optionIds: [String]
+
+            enum CodingKeys: String, CodingKey {
+                case id, name, color
+                case optionIds = "option_ids"
+            }
         }
     }
 
     func toNotionDatabase() -> NotionDatabase {
         let props = properties.map { (name, def) in
             var options: [NotionSelectOption]? = nil
-            if let selectOptions = def.select?.options ?? def.multiSelect?.options {
+            var statusGroups: [NotionStatusGroup]? = nil
+            if let selectOptions = def.select?.options ?? def.multiSelect?.options ?? def.status?.options {
                 options = selectOptions.map { NotionSelectOption(id: $0.id, name: $0.name, color: $0.color) }
             }
-            return NotionProperty(id: def.id, name: name, type: def.type, options: options)
+            if let groups = def.status?.groups {
+                statusGroups = groups.map {
+                    NotionStatusGroup(
+                        id: $0.id,
+                        name: $0.name,
+                        color: $0.color,
+                        optionIds: $0.optionIds
+                    )
+                }
+            }
+            return NotionProperty(
+                id: def.id,
+                name: name,
+                type: def.type,
+                options: options,
+                statusGroups: statusGroups
+            )
         }
 
         return NotionDatabase(

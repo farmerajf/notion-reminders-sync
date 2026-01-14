@@ -20,6 +20,7 @@ struct MappingEditorSheet: View {
     @State private var titlePropertyId: String = ""
     @State private var dueDatePropertyId: String = ""
     @State private var priorityPropertyId: String = ""
+    @State private var statusPropertyId: String = ""
 
     private let remindersService = RemindersService.shared
 
@@ -125,7 +126,8 @@ struct MappingEditorSheet: View {
             }
             .formStyle(.grouped)
         }
-        .frame(width: 500, height: 500)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .onAppear {
             loadData()
         }
@@ -172,6 +174,19 @@ struct MappingEditorSheet: View {
                 }
                 .labelsHidden()
             }
+
+            // Status property
+            HStack {
+                Text("Status")
+                    .frame(width: 80, alignment: .leading)
+                Picker("", selection: $statusPropertyId) {
+                    Text("None").tag("")
+                    ForEach(database.properties.filter { $0.type == "status" }) { prop in
+                        Text(prop.name).tag(prop.id)
+                    }
+                }
+                .labelsHidden()
+            }
         }
     }
 
@@ -189,6 +204,7 @@ struct MappingEditorSheet: View {
             titlePropertyId = mapping.titlePropertyId
             dueDatePropertyId = mapping.dueDatePropertyId ?? ""
             priorityPropertyId = mapping.priorityPropertyId ?? ""
+            statusPropertyId = mapping.statusPropertyId ?? ""
         }
     }
 
@@ -272,8 +288,19 @@ struct MappingEditorSheet: View {
             ? nil
             : notionDatabase.properties.first { $0.id == priorityPropertyId }
 
-        // Find checkbox property for completed status
-        let completedProp = notionDatabase.properties.first { $0.type == "checkbox" }
+        let statusProp = statusPropertyId.isEmpty
+            ? nil
+            : notionDatabase.properties.first { $0.id == statusPropertyId }
+        let statusCompletedValues = completedStatusValues(from: statusProp)
+        let statusCompletedValue = preferredCompletedStatusValue(from: statusCompletedValues)
+
+        let completedProp: NotionProperty? = {
+            guard statusProp == nil else { return nil }
+            if let mapping = mapping, let existingId = mapping.completedPropertyId {
+                return notionDatabase.properties.first { $0.id == existingId }
+            }
+            return notionDatabase.properties.first { $0.type == "checkbox" }
+        }()
 
         let newMapping = SyncMapping(
             id: mapping?.id ?? UUID(),
@@ -290,12 +317,43 @@ struct MappingEditorSheet: View {
             dueDatePropertyName: dueDateProp?.name,
             priorityPropertyId: priorityProp?.id,
             priorityPropertyName: priorityProp?.name,
+            statusPropertyId: statusProp?.id,
+            statusPropertyName: statusProp?.name,
+            statusCompletedValue: statusCompletedValue,
+            statusCompletedValues: statusCompletedValues,
             completedPropertyId: completedProp?.id,
             completedPropertyName: completedProp?.name
         )
 
         onSave(newMapping)
         dismiss()
+    }
+
+    private func completedStatusValues(from statusProp: NotionProperty?) -> [String]? {
+        guard let statusProp = statusProp,
+              let groups = statusProp.statusGroups,
+              let options = statusProp.options else { return nil }
+        guard let completeGroup = groups.first(where: { $0.name.lowercased() == "complete" }) else {
+            return nil
+        }
+
+        let optionsById = Dictionary(uniqueKeysWithValues: options.map { ($0.id, $0.name) })
+        let names = completeGroup.optionIds.compactMap { optionsById[$0] }
+        return names.isEmpty ? nil : names
+    }
+
+    private func preferredCompletedStatusValue(from values: [String]?) -> String? {
+        guard let values = values, !values.isEmpty else { return nil }
+        if let done = values.first(where: { $0.lowercased() == "done" }) {
+            return done
+        }
+        if let completed = values.first(where: { $0.lowercased() == "completed" }) {
+            return completed
+        }
+        if let complete = values.first(where: { $0.lowercased() == "complete" }) {
+            return complete
+        }
+        return values.first
     }
 }
 

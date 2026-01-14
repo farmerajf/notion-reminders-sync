@@ -90,6 +90,11 @@ final class LocalSyncStateStore {
         }
     }
 
+    /// Finds a sync record by its short ID (used for n:// URL handling)
+    func getSyncRecord(byShortId shortId: String) -> SyncRecord? {
+        return getRecordsFromDefaults().first { $0.matches(shortId: shortId) }
+    }
+
     func deleteSyncRecord(id: UUID) throws {
         var records = getRecordsFromDefaults()
         records.removeAll { $0.id == id }

@@ -1,38 +1,52 @@
 import SwiftUI
 
 struct SyncStatusView: View {
-    private let syncEngine = SyncEngine.shared
+    @State private var syncEngine = SyncEngine.shared
     private let syncStateStore = LocalSyncStateStore.shared
 
-    @State private var isSyncing = false
-    @State private var lastSyncDate: Date? = nil
     @State private var syncHistory: [SyncHistoryEntry] = []
     @State private var errorMessage: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Current status header
-            currentStatusSection
-                .padding()
+        List {
+            Section {
+                statusRow
 
-            Divider()
+                if let lastSync = syncEngine.lastSyncDate {
+                    lastSyncRow(lastSync)
+                }
 
-            // Sync history
-            if syncHistory.isEmpty {
-                emptyHistoryView
-            } else {
-                historyList
+                if let error = errorMessage {
+                    errorRow(error)
+                }
+            }
+
+            Section("History") {
+                if syncHistory.isEmpty {
+                    emptyHistoryRow
+                } else {
+                    ForEach(syncHistory) { entry in
+                        SyncHistoryRowView(entry: entry)
+                    }
+                }
             }
         }
+        .listStyle(.insetGrouped)
         .navigationTitle("Status")
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button(action: syncNow) {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .disabled(syncEngine.isSyncing)
+            }
+        }
         .onAppear {
             loadState()
         }
     }
 
     private func loadState() {
-        lastSyncDate = syncEngine.lastSyncDate
-        isSyncing = syncEngine.isSyncing
         if let error = syncEngine.lastError {
             errorMessage = error.localizedDescription
         }
@@ -43,99 +57,58 @@ struct SyncStatusView: View {
         }
     }
 
-    private var currentStatusSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Sync Status")
-                        .font(.headline)
+    private var statusRow: some View {
+        HStack {
+            Text("Status")
 
-                    HStack(spacing: 6) {
-                        if isSyncing {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                            Text("Syncing...")
-                                .foregroundColor(.secondary)
-                        } else {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 8, height: 8)
-                            Text("Idle")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .font(.subheadline)
+            Spacer()
+
+            HStack(spacing: 6) {
+                if syncEngine.isSyncing {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 8, height: 8)
                 }
-
-                Spacer()
-
-                Button(action: syncNow) {
-                    HStack(spacing: 4) {
-                        if isSyncing {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        Text(isSyncing ? "Syncing..." : "Sync Now")
-                    }
-                }
-                .disabled(isSyncing)
-            }
-
-            if let lastSync = lastSyncDate {
-                HStack {
-                    Text("Last sync:")
-                        .foregroundColor(.secondary)
-                    Text(lastSync, style: .relative)
-                    Text("ago")
-                        .foregroundColor(.secondary)
-                }
-                .font(.caption)
-            }
-
-            if let error = errorMessage {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle")
-                        .foregroundColor(.orange)
-                    Text(error)
-                        .foregroundColor(.orange)
-                }
-                .font(.caption)
+                Text(syncEngine.isSyncing ? "Syncing" : "Idle")
+                    .foregroundColor(.secondary)
             }
         }
     }
 
-    private var emptyHistoryView: some View {
-        VStack(spacing: 16) {
+    private func lastSyncRow(_ date: Date) -> some View {
+        HStack {
+            Text("Last Sync")
             Spacer()
-
-            Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 48))
+            Text(date, style: .relative)
                 .foregroundColor(.secondary)
+            Text("ago")
+                .foregroundColor(.secondary)
+        }
+        .font(.subheadline)
+    }
 
+    private func errorRow(_ error: String) -> some View {
+        Label(error, systemImage: "exclamationmark.triangle")
+            .foregroundColor(.orange)
+            .font(.subheadline)
+    }
+
+    private var emptyHistoryRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text("No Sync History")
-                .font(.headline)
-
-            Text("Sync history will appear here after your first sync.")
                 .font(.subheadline)
+            Text("Sync history will appear here after your first sync.")
+                .font(.caption)
                 .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var historyList: some View {
-        List(syncHistory) { entry in
-            SyncHistoryRowView(entry: entry)
-        }
+        .padding(.vertical, 4)
+        .listRowSeparator(.hidden)
     }
 
     private func syncNow() {
-        isSyncing = true
         errorMessage = nil
 
         Task {
@@ -143,13 +116,10 @@ struct SyncStatusView: View {
                 try await syncEngine.syncAll()
 
                 await MainActor.run {
-                    isSyncing = false
-                    lastSyncDate = syncEngine.lastSyncDate
                     loadState() // Reload history
                 }
             } catch {
                 await MainActor.run {
-                    isSyncing = false
                     errorMessage = error.localizedDescription
                     print("[SyncStatusView] Sync failed: \(error)")
                 }
@@ -163,17 +133,19 @@ struct SyncHistoryRowView: View {
     let entry: SyncHistoryEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top, spacing: 12) {
             HStack {
                 Image(systemName: operationIcon)
                     .foregroundColor(operationColor)
 
-                Text(entry.timestamp, style: .date)
-                    .font(.subheadline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.timestamp, style: .date)
+                        .font(.subheadline)
 
-                Text(entry.timestamp, style: .time)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    Text(entry.timestamp, style: .time)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer()
 
@@ -183,7 +155,7 @@ struct SyncHistoryRowView: View {
                 }
             }
 
-            HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 if entry.itemsCreated > 0 {
                     Label("\(entry.itemsCreated) created", systemImage: "plus.circle")
                         .font(.caption)
@@ -191,7 +163,7 @@ struct SyncHistoryRowView: View {
                 }
 
                 if entry.itemsUpdated > 0 {
-                    Label("\(entry.itemsUpdated) updated", systemImage: "arrow.triangle.2.circlepath")
+                    Text(updateText)
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
@@ -210,6 +182,13 @@ struct SyncHistoryRowView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var updateText: String {
+        if entry.itemsUpdated == 1 {
+            return "1 update"
+        }
+        return "\(entry.itemsUpdated) updates"
     }
 
     private var operationIcon: String {

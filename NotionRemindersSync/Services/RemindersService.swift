@@ -108,6 +108,31 @@ final class RemindersService {
         try eventStore.save(reminder, commit: true)
     }
 
+    /// Appends a short n:// URL to the reminder's notes if not already present.
+    /// Returns true if the notes were updated, false if URL was already present.
+    func appendNotionShortURLToNotes(identifier: String, shortId: String) throws -> Bool {
+        guard let reminder = getReminder(identifier: identifier) else {
+            throw RemindersError.reminderNotFound
+        }
+
+        let shortURL = "n://\(shortId)"
+
+        // Check if this short URL already exists in the notes
+        let currentNotes = reminder.notes ?? ""
+        if currentNotes.contains(shortURL) {
+            print("[RemindersService] Short URL already in notes for '\(reminder.title ?? "")'")
+            return false
+        }
+
+        // Append the short URL to notes
+        let separator = currentNotes.isEmpty ? "" : "\n\n"
+        reminder.notes = currentNotes + separator + shortURL
+
+        try eventStore.save(reminder, commit: true)
+        print("[RemindersService] Appended short URL '\(shortURL)' to notes for '\(reminder.title ?? "")'")
+        return true
+    }
+
     // MARK: - Reminders - Delete
 
     func deleteReminder(_ reminder: EKReminder) throws {

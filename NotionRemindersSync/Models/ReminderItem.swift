@@ -9,6 +9,7 @@ struct ReminderItem: Identifiable, Codable, Equatable, Hashable {
     var priority: Priority
     var isCompleted: Bool
     var modificationDate: Date
+    var url: URL?
 
     // Source identifiers
     var appleReminderId: String?
@@ -22,6 +23,7 @@ struct ReminderItem: Identifiable, Codable, Equatable, Hashable {
         priority: Priority = .none,
         isCompleted: Bool = false,
         modificationDate: Date = Date(),
+        url: URL? = nil,
         appleReminderId: String? = nil,
         notionPageId: String? = nil
     ) {
@@ -32,6 +34,7 @@ struct ReminderItem: Identifiable, Codable, Equatable, Hashable {
         self.priority = priority
         self.isCompleted = isCompleted
         self.modificationDate = modificationDate
+        self.url = url
         self.appleReminderId = appleReminderId
         self.notionPageId = notionPageId
     }

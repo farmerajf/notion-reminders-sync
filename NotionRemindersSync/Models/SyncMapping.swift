@@ -18,6 +18,10 @@ struct SyncMapping: Identifiable, Codable, Equatable, Hashable {
     var dueDatePropertyName: String?
     var priorityPropertyId: String?
     var priorityPropertyName: String?
+    var statusPropertyId: String?
+    var statusPropertyName: String?
+    var statusCompletedValue: String?
+    var statusCompletedValues: [String]?
     var completedPropertyId: String?
     var completedPropertyName: String?
 
@@ -36,6 +40,10 @@ struct SyncMapping: Identifiable, Codable, Equatable, Hashable {
         dueDatePropertyName: String? = nil,
         priorityPropertyId: String? = nil,
         priorityPropertyName: String? = nil,
+        statusPropertyId: String? = nil,
+        statusPropertyName: String? = nil,
+        statusCompletedValue: String? = nil,
+        statusCompletedValues: [String]? = nil,
         completedPropertyId: String? = nil,
         completedPropertyName: String? = nil
     ) {
@@ -53,6 +61,10 @@ struct SyncMapping: Identifiable, Codable, Equatable, Hashable {
         self.dueDatePropertyName = dueDatePropertyName
         self.priorityPropertyId = priorityPropertyId
         self.priorityPropertyName = priorityPropertyName
+        self.statusPropertyId = statusPropertyId
+        self.statusPropertyName = statusPropertyName
+        self.statusCompletedValue = statusCompletedValue
+        self.statusCompletedValues = statusCompletedValues
         self.completedPropertyId = completedPropertyId
         self.completedPropertyName = completedPropertyName
     }

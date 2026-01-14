@@ -27,6 +27,7 @@
 		A0000017 /* MappingsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* MappingsSettingsView.swift */; };
 		A0000018 /* SyncStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* SyncStatusView.swift */; };
 		A0000019 /* MappingEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000019 /* MappingEditorSheet.swift */; };
+		A0000022 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000022 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +53,8 @@
 		A1000018 /* SyncStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusView.swift; sourceTree = "<group>"; };
 		A1000019 /* MappingEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MappingEditorSheet.swift; sourceTree = "<group>"; };
 		A1000020 /* NotionRemindersSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotionRemindersSync.entitlements; sourceTree = "<group>"; };
+		A1000022 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000023 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000001 /* NotionRemindersSyncApp.swift */,
+				A1000023 /* Info.plist */,
 				A1000020 /* NotionRemindersSync.entitlements */,
 				A3000004 /* App */,
 				A3000005 /* Models */,
@@ -153,6 +157,7 @@
 				A1000016 /* NotionAuthView.swift */,
 				A1000017 /* MappingsSettingsView.swift */,
 				A1000018 /* SyncStatusView.swift */,
+				A1000022 /* SettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -253,6 +258,7 @@
 				A0000017 /* MappingsSettingsView.swift in Sources */,
 				A0000018 /* SyncStatusView.swift in Sources */,
 				A0000019 /* MappingEditorSheet.swift in Sources */,
+				A0000022 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -312,11 +318,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
+				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -369,10 +375,10 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				SDKROOT = macosx;
+				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -384,18 +390,14 @@
 				CODE_SIGN_ENTITLEMENTS = NotionRemindersSync/NotionRemindersSync.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 62696V9M3X;
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Notion Reminders Sync";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSRemindersUsageDescription = "NotionRemindersSync needs access to your Reminders to sync them with Notion.";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotionRemindersSync/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.adamfarmer.notionremindersync;
@@ -403,6 +405,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -412,24 +415,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = NotionRemindersSync/NotionRemindersSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 62696V9M3X;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Notion Reminders Sync";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSRemindersUsageDescription = "NotionRemindersSync needs access to your Reminders to sync them with Notion.";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotionRemindersSync/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.adamfarmer.notionremindersync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

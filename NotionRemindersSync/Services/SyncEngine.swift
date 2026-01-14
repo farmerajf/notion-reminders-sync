@@ -100,6 +100,7 @@ final class SyncEngine {
             )
 
             actions.append((action, record))
+
             processedAppleIds.insert(record.appleReminderId)
             processedNotionIds.insert(record.notionPageId)
         }
@@ -145,6 +146,20 @@ final class SyncEngine {
                 print("[SyncEngine] Action failed: \(error)")
                 stats.errors.append(error.localizedDescription)
             }
+        }
+
+        // One-way URL backfill from Notion to Apple for existing pairs
+        do {
+            let updatedCount = try backfillAppleURLs(
+                syncRecords: syncRecords,
+                notionItemsByPageId: notionItemsByPageId
+            )
+            if updatedCount > 0 {
+                stats.updated += updatedCount
+            }
+            print("[SyncEngine] URL backfill completed: \(updatedCount) updated")
+        } catch {
+            print("[SyncEngine] URL backfill failed: \(error)")
         }
 
         // 7. Update mapping's last sync date
@@ -224,7 +239,11 @@ final class SyncEngine {
             var newItem = item
             newItem.notionPageId = page.id
             print("[SyncEngine] After Notion create: appleId=\(newItem.appleReminderId ?? "nil") notionId=\(newItem.notionPageId ?? "nil")")
-            try await saveSyncRecord(for: newItem, mapping: mapping, existingRecord: existingRecord)
+            if let record = try await saveSyncRecord(for: newItem, mapping: mapping, existingRecord: existingRecord),
+               let appleId = newItem.appleReminderId {
+                // Add short URL to Apple reminder notes immediately
+                try? remindersService.appendNotionShortURLToNotes(identifier: appleId, shortId: record.shortId)
+            }
             stats.created += 1
 
         case .createInApple(let item):
@@ -233,7 +252,10 @@ final class SyncEngine {
             var newItem = item
             newItem.appleReminderId = reminder.calendarItemIdentifier
             print("[SyncEngine] After Apple create: appleId=\(newItem.appleReminderId ?? "nil") notionId=\(newItem.notionPageId ?? "nil")")
-            try await saveSyncRecord(for: newItem, mapping: mapping, existingRecord: existingRecord)
+            if let record = try await saveSyncRecord(for: newItem, mapping: mapping, existingRecord: existingRecord) {
+                // Add short URL to Apple reminder notes immediately
+                try? remindersService.appendNotionShortURLToNotes(identifier: reminder.calendarItemIdentifier, shortId: record.shortId)
+            }
             stats.created += 1
 
         case .updateNotion(let item):
@@ -309,8 +331,14 @@ final class SyncEngine {
             )
         }
 
-        // Completed (optional)
-        if let completedPropertyId = mapping.completedPropertyId {
+        // Status or completed (optional)
+        if let statusPropertyId = mapping.statusPropertyId {
+            if item.isCompleted, let completedStatusName = completedStatusName(for: mapping) {
+                properties[statusPropertyId] = .status(
+                    NotionPropertyValue.SelectValue(name: completedStatusName)
+                )
+            }
+        } else if let completedPropertyId = mapping.completedPropertyId {
             properties[completedPropertyId] = .checkbox(item.isCompleted)
         }
 
@@ -348,8 +376,14 @@ final class SyncEngine {
             }
         }
 
-        // Completed
-        if let completedPropertyId = mapping.completedPropertyId {
+        // Status or completed
+        if let statusPropertyId = mapping.statusPropertyId {
+            if item.isCompleted, let completedStatusName = completedStatusName(for: mapping) {
+                properties[statusPropertyId] = .status(
+                    NotionPropertyValue.SelectValue(name: completedStatusName)
+                )
+            }
+        } else if let completedPropertyId = mapping.completedPropertyId {
             properties[completedPropertyId] = .checkbox(item.isCompleted)
         }
 
@@ -369,15 +403,34 @@ final class SyncEngine {
         if let dueDatePropertyName = mapping.dueDatePropertyName,
            let dateProp = page.properties[dueDatePropertyName],
            let dateString = dateProp.dateStart {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: dateString) {
-                dueDate = date
-                hasDueTime = dateString.contains("T")
+            if dateString.contains("T") {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                if let date = formatter.date(from: dateString) {
+                    dueDate = date
+                    hasDueTime = true
+                } else {
+                    formatter.formatOptions = [.withInternetDateTime]
+                    if let date = formatter.date(from: dateString) {
+                        dueDate = date
+                        hasDueTime = true
+                    }
+                }
             } else {
-                // Try date-only format
-                formatter.formatOptions = [.withFullDate]
-                dueDate = formatter.date(from: dateString)
+                let components = dateString.split(separator: "-").compactMap { Int($0) }
+                if components.count == 3 {
+                    var dateComponents = DateComponents()
+                    dateComponents.year = components[0]
+                    dateComponents.month = components[1]
+                    dateComponents.day = components[2]
+                    dueDate = Calendar.current.date(from: dateComponents)
+                    hasDueTime = false
+                } else {
+                    let formatter = ISO8601DateFormatter()
+                    formatter.formatOptions = [.withFullDate]
+                    dueDate = formatter.date(from: dateString)
+                    hasDueTime = false
+                }
             }
         }
 
@@ -391,8 +444,12 @@ final class SyncEngine {
 
         // Extract completed
         var isCompleted = false
-        if let completedPropertyName = mapping.completedPropertyName,
-           let completedProp = page.properties[completedPropertyName] {
+        if let statusPropertyName = mapping.statusPropertyName,
+           let statusProp = page.properties[statusPropertyName],
+           let statusName = statusProp.selectName {
+            isCompleted = isCompletedStatus(statusName, mapping: mapping)
+        } else if let completedPropertyName = mapping.completedPropertyName,
+                  let completedProp = page.properties[completedPropertyName] {
             isCompleted = completedProp.isChecked
         }
 
@@ -403,22 +460,27 @@ final class SyncEngine {
             priority: priority,
             isCompleted: isCompleted,
             modificationDate: page.lastEditedTime,
+            url: notionPageURL(from: page),
             notionPageId: page.id
         )
     }
 
+    @discardableResult
     private func saveSyncRecord(
         for item: ReminderItem,
         mapping: SyncMapping,
         existingRecord: SyncRecord?
-    ) async throws {
-        guard let appleId = item.appleReminderId else {
+    ) async throws -> SyncRecord? {
+        let appleId = item.appleReminderId ?? existingRecord?.appleReminderId
+        let notionId = item.notionPageId ?? existingRecord?.notionPageId
+
+        guard let appleId else {
             print("[SyncEngine] WARNING: Cannot save sync record - missing appleReminderId for '\(item.title)'")
-            return
+            return nil
         }
-        guard let notionId = item.notionPageId else {
+        guard let notionId else {
             print("[SyncEngine] WARNING: Cannot save sync record - missing notionPageId for '\(item.title)'")
-            return
+            return nil
         }
 
         let record = SyncRecord(
@@ -434,6 +496,7 @@ final class SyncEngine {
 
         try syncStateStore.saveSyncRecord(record)
         print("[SyncEngine] Saved sync record: Apple(\(appleId)) <-> Notion(\(notionId)) for '\(item.title)'")
+        return record
     }
 
     // MARK: - Types
@@ -467,5 +530,67 @@ final class SyncEngine {
                 return "Missing Notion page ID"
             }
         }
+    }
+
+    // MARK: - Status Helpers
+
+    private func completedStatusName(for mapping: SyncMapping) -> String? {
+        if let value = mapping.statusCompletedValue {
+            return value
+        }
+        if let values = mapping.statusCompletedValues, !values.isEmpty {
+            return values.first
+        }
+        return nil
+    }
+
+    private func isCompletedStatus(_ name: String, mapping: SyncMapping) -> Bool {
+        let normalized = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard let values = mapping.statusCompletedValues, !values.isEmpty else {
+            return false
+        }
+        return values.contains { $0.lowercased() == normalized }
+    }
+
+    private func notionPageURL(from page: NotionPage) -> URL? {
+        if let urlString = page.url, let url = URL(string: urlString) {
+            return url
+        }
+        let compactId = page.id.replacingOccurrences(of: "-", with: "")
+        return URL(string: "https://www.notion.so/\(compactId)")
+    }
+
+    /// Backfills short n:// URLs into Apple Reminder notes (one-way sync from Notion to Apple).
+    /// Uses the sync record's shortId to create a compact URL like n://abc12345
+    private func backfillAppleURLs(
+        syncRecords: [SyncRecord],
+        notionItemsByPageId: [String: ReminderItem]
+    ) throws -> Int {
+        var updatedCount = 0
+        for record in syncRecords {
+            // Verify the Notion item still exists
+            guard notionItemsByPageId[record.notionPageId] != nil else {
+                print("[SyncEngine] URL backfill skip: missing Notion item for pageId=\(record.notionPageId)")
+                continue
+            }
+            guard let reminder = remindersService.getReminder(identifier: record.appleReminderId) else {
+                print("[SyncEngine] URL backfill skip: missing Apple reminder for id=\(record.appleReminderId)")
+                continue
+            }
+
+            do {
+                let wasUpdated = try remindersService.appendNotionShortURLToNotes(
+                    identifier: record.appleReminderId,
+                    shortId: record.shortId
+                )
+                if wasUpdated {
+                    print("[SyncEngine] URL backfill: added n://\(record.shortId) to notes for '\(reminder.title ?? "")'")
+                    updatedCount += 1
+                }
+            } catch {
+                print("[SyncEngine] URL backfill failed for '\(reminder.title ?? "")': \(error)")
+            }
+        }
+        return updatedCount
     }
 }

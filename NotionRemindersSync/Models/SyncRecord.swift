@@ -12,6 +12,17 @@ struct SyncRecord: Identifiable, Codable, Equatable, Hashable {
     var lastSyncDate: Date
     var syncStatus: SyncStatus
 
+    /// Short identifier derived from UUID for use in n:// URLs
+    var shortId: String {
+        // Use first 8 hex characters of UUID (lowercase, no dashes)
+        String(id.uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(8))
+    }
+
+    /// Checks if this record matches a given short ID
+    func matches(shortId: String) -> Bool {
+        self.shortId == shortId.lowercased()
+    }
+
     init(
         id: UUID = UUID(),
         mappingId: UUID,
