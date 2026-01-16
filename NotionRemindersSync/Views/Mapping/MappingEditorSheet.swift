@@ -293,6 +293,7 @@ struct MappingEditorSheet: View {
             : notionDatabase.properties.first { $0.id == statusPropertyId }
         let statusCompletedValues = completedStatusValues(from: statusProp)
         let statusCompletedValue = preferredCompletedStatusValue(from: statusCompletedValues)
+        let statusNotStartedValue = notStartedStatusValue(from: statusProp)
 
         let completedProp: NotionProperty? = {
             guard statusProp == nil else { return nil }
@@ -321,6 +322,7 @@ struct MappingEditorSheet: View {
             statusPropertyName: statusProp?.name,
             statusCompletedValue: statusCompletedValue,
             statusCompletedValues: statusCompletedValues,
+            statusNotStartedValue: statusNotStartedValue,
             completedPropertyId: completedProp?.id,
             completedPropertyName: completedProp?.name
         )
@@ -354,6 +356,73 @@ struct MappingEditorSheet: View {
             return complete
         }
         return values.first
+    }
+
+    /// Gets the preferred "not started" status value from a status property
+    /// Looks for the "To-do" group (Notion's default incomplete group name), falling back to other non-complete groups
+    private func notStartedStatusValue(from statusProp: NotionProperty?) -> String? {
+        guard let statusProp = statusProp,
+              let groups = statusProp.statusGroups,
+              let options = statusProp.options else { return nil }
+
+        let optionsById = Dictionary(uniqueKeysWithValues: options.map { ($0.id, $0.name) })
+
+        // Helper to get option names from a group
+        func optionNames(for group: NotionStatusGroup) -> [String] {
+            group.optionIds.compactMap { optionsById[$0] }
+        }
+
+        // Helper to pick preferred option name from a list
+        func preferredOption(from names: [String]) -> String? {
+            guard !names.isEmpty else { return nil }
+            if let notStarted = names.first(where: { $0.lowercased() == "not started" }) {
+                return notStarted
+            }
+            if let todo = names.first(where: { $0.lowercased() == "to do" || $0.lowercased() == "to-do" }) {
+                return todo
+            }
+            return names.first
+        }
+
+        // Notion uses "To-do" as the default incomplete group name
+        // Match flexibly: "To-do", "To Do", "Todo", etc.
+        let todoGroup = groups.first { group in
+            let normalized = group.name.lowercased().replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
+            return normalized == "todo"
+        }
+
+        if let todoGroup = todoGroup {
+            let names = optionNames(for: todoGroup)
+            if let preferred = preferredOption(from: names) {
+                return preferred
+            }
+        }
+
+        // Fallback: try "In progress" group
+        let inProgressGroup = groups.first { group in
+            let normalized = group.name.lowercased().replacingOccurrences(of: " ", with: "")
+            return normalized == "inprogress"
+        }
+
+        if let inProgressGroup = inProgressGroup {
+            let names = optionNames(for: inProgressGroup)
+            if let first = names.first {
+                return first
+            }
+        }
+
+        // Last resort: use any group that isn't "complete"
+        let nonCompleteGroup = groups.first { group in
+            let normalized = group.name.lowercased()
+            return normalized != "complete"
+        }
+
+        if let nonCompleteGroup = nonCompleteGroup {
+            let names = optionNames(for: nonCompleteGroup)
+            return names.first
+        }
+
+        return nil
     }
 }
 

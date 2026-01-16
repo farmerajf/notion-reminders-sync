@@ -47,8 +47,13 @@ struct ConflictResolver {
 enum SyncAction {
     case createInNotion(ReminderItem)
     case createInApple(ReminderItem)
-    case updateNotion(ReminderItem)
-    case updateApple(ReminderItem)
+    /// Update Notion with the item.
+    /// - `previouslyCompleted`: Notion's completion state before this update (to preserve In Progress status)
+    /// - `notionModificationDate`: Notion's modification date before this update (for accurate change tracking)
+    case updateNotion(ReminderItem, previouslyCompleted: Bool?, notionModificationDate: Date)
+    /// Update Apple with the item.
+    /// - `appleModificationDate`: Apple's modification date before this update (for accurate change tracking)
+    case updateApple(ReminderItem, appleModificationDate: Date)
     case deleteFromNotion(ReminderItem)
     case deleteFromApple(ReminderItem)
     case cleanupRecord

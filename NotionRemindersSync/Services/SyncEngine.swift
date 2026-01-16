@@ -114,9 +114,9 @@ final class SyncEngine {
             if let notionItem = matchingNotionItem, let notionId = notionItem.notionPageId {
                 // Found a match by title - decide which version to use
                 if appleItem.modificationDate >= notionItem.modificationDate {
-                    actions.append((.updateNotion(appleItem), nil))
+                    actions.append((.updateNotion(appleItem, previouslyCompleted: notionItem.isCompleted, notionModificationDate: notionItem.modificationDate), nil))
                 } else {
-                    actions.append((.updateApple(notionItem), nil))
+                    actions.append((.updateApple(notionItem, appleModificationDate: appleItem.modificationDate), nil))
                 }
                 processedNotionIds.insert(notionId)
             } else {
@@ -205,9 +205,9 @@ final class SyncEngine {
             case .noChange:
                 return .skip
             case .useApple(let item):
-                return .updateNotion(item)
+                return .updateNotion(item, previouslyCompleted: notion.isCompleted, notionModificationDate: notion.modificationDate)
             case .useNotion(let item):
-                return .updateApple(item)
+                return .updateApple(item, appleModificationDate: apple.modificationDate)
             }
 
         // Only in Apple: was deleted from Notion -> propagate deletion
@@ -259,21 +259,27 @@ final class SyncEngine {
             }
             stats.created += 1
 
-        case .updateNotion(let item):
+        case .updateNotion(let item, let previouslyCompleted, let notionModificationDate):
             guard let pageId = item.notionPageId ?? existingRecord?.notionPageId else {
                 throw SyncError.missingNotionPageId
             }
-            try await updateNotionPage(pageId: pageId, with: item, mapping: mapping)
-            try await saveSyncRecord(for: item, mapping: mapping, existingRecord: existingRecord)
+            try await updateNotionPage(pageId: pageId, with: item, mapping: mapping, previouslyCompleted: previouslyCompleted)
+            // Use Date() for Notion since we just updated it; preserve the original Apple date
+            try await saveSyncRecord(for: item, mapping: mapping, existingRecord: existingRecord,
+                                     appleModificationDate: item.modificationDate,
+                                     notionModificationDate: Date())
             stats.updated += 1
 
-        case .updateApple(let item):
+        case .updateApple(let item, let appleModificationDate):
             guard let reminderId = item.appleReminderId ?? existingRecord?.appleReminderId,
                   let reminder = remindersService.getReminder(identifier: reminderId) else {
                 throw SyncError.missingAppleReminderId
             }
             try remindersService.updateReminder(reminder, with: item)
-            try await saveSyncRecord(for: item, mapping: mapping, existingRecord: existingRecord)
+            // Use Date() for Apple since we just updated it; preserve the original Notion date
+            try await saveSyncRecord(for: item, mapping: mapping, existingRecord: existingRecord,
+                                     appleModificationDate: Date(),
+                                     notionModificationDate: item.modificationDate)
             stats.updated += 1
 
         case .deleteFromNotion(let item):
@@ -335,6 +341,15 @@ final class SyncEngine {
                 properties[statusPropertyId] = .status(
                     NotionPropertyValue.SelectValue(name: completedStatusName)
                 )
+            } else if !item.isCompleted {
+                if let notStartedStatusName = mapping.statusNotStartedValue {
+                    // Explicitly set to "Not started" / "To Do" for incomplete items
+                    properties[statusPropertyId] = .status(
+                        NotionPropertyValue.SelectValue(name: notStartedStatusName)
+                    )
+                } else {
+                    print("[SyncEngine] Warning: No 'not started' status value configured for mapping '\(mapping.notionDatabaseName)'. Incomplete items may not have correct status. Please re-edit and save the mapping to fix.")
+                }
             }
         } else if let completedPropertyId = mapping.completedPropertyId {
             properties[completedPropertyId] = .checkbox(item.isCompleted)
@@ -343,7 +358,7 @@ final class SyncEngine {
         return try await notionClient.createPage(in: mapping.notionDatabaseId, properties: properties)
     }
 
-    private func updateNotionPage(pageId: String, with item: ReminderItem, mapping: SyncMapping) async throws {
+    private func updateNotionPage(pageId: String, with item: ReminderItem, mapping: SyncMapping, previouslyCompleted: Bool?) async throws {
         var properties: [String: NotionPropertyValue] = [:]
 
         // Title
@@ -372,14 +387,28 @@ final class SyncEngine {
             }
         }
 
-        // Status or completed
+        // Status or completed - only update if completion state actually changed
+        // This preserves intermediate statuses like "In Progress" when only title/date/priority changed
+        let completionChanged = previouslyCompleted != item.isCompleted
+
         if let statusPropertyId = mapping.statusPropertyId {
-            if item.isCompleted, let completedStatusName = completedStatusName(for: mapping) {
-                properties[statusPropertyId] = .status(
-                    NotionPropertyValue.SelectValue(name: completedStatusName)
-                )
+            if completionChanged {
+                if item.isCompleted, let completedStatusName = completedStatusName(for: mapping) {
+                    properties[statusPropertyId] = .status(
+                        NotionPropertyValue.SelectValue(name: completedStatusName)
+                    )
+                } else if !item.isCompleted {
+                    if let notStartedStatusName = mapping.statusNotStartedValue {
+                        properties[statusPropertyId] = .status(
+                            NotionPropertyValue.SelectValue(name: notStartedStatusName)
+                        )
+                    } else {
+                        print("[SyncEngine] Warning: No 'not started' status value configured for mapping '\(mapping.notionDatabaseName)'. Cannot revert status to incomplete. Please re-edit and save the mapping to fix.")
+                    }
+                }
             }
         } else if let completedPropertyId = mapping.completedPropertyId {
+            // Checkbox property - always sync since it's binary like Apple Reminders
             properties[completedPropertyId] = .checkbox(item.isCompleted)
         }
 
@@ -465,7 +494,9 @@ final class SyncEngine {
     private func saveSyncRecord(
         for item: ReminderItem,
         mapping: SyncMapping,
-        existingRecord: SyncRecord?
+        existingRecord: SyncRecord?,
+        appleModificationDate: Date? = nil,
+        notionModificationDate: Date? = nil
     ) async throws -> SyncRecord? {
         let appleId = item.appleReminderId ?? existingRecord?.appleReminderId
         let notionId = item.notionPageId ?? existingRecord?.notionPageId
@@ -485,8 +516,8 @@ final class SyncEngine {
             appleReminderId: appleId,
             notionPageId: notionId,
             lastSyncedHash: item.contentHash,
-            lastAppleModification: item.modificationDate,
-            lastNotionModification: item.modificationDate,
+            lastAppleModification: appleModificationDate ?? item.modificationDate,
+            lastNotionModification: notionModificationDate ?? item.modificationDate,
             syncStatus: .synced
         )
 
