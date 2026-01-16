@@ -14,6 +14,8 @@ struct ReminderItem: Identifiable, Codable, Equatable, Hashable {
     // Source identifiers
     var appleReminderId: String?
     var notionPageId: String?
+    /// Short ID extracted from n:// URL in Apple Reminder notes (for recurring reminder linking)
+    var shortId: String?
 
     init(
         id: UUID = UUID(),
@@ -25,7 +27,8 @@ struct ReminderItem: Identifiable, Codable, Equatable, Hashable {
         modificationDate: Date = Date(),
         url: URL? = nil,
         appleReminderId: String? = nil,
-        notionPageId: String? = nil
+        notionPageId: String? = nil,
+        shortId: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -37,6 +40,7 @@ struct ReminderItem: Identifiable, Codable, Equatable, Hashable {
         self.url = url
         self.appleReminderId = appleReminderId
         self.notionPageId = notionPageId
+        self.shortId = shortId
     }
 
     /// Computes a hash of the content for change detection

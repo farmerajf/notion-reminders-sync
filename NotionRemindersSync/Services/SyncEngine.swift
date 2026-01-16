@@ -63,16 +63,35 @@ final class SyncEngine {
         let appleReminders = try await remindersService.getReminders(in: appleList)
         let notionPages = try await notionClient.getAllPages(in: mapping.notionDatabaseId)
 
-        // 2. Convert to unified ReminderItem format
-        let appleItems = appleReminders.map { remindersService.toReminderItem($0) }
+        // 2. Deduplicate recurring reminders: if same ID appears multiple times,
+        // keep the incomplete instance (the current one) over completed instances
+        let deduplicatedReminders: [EKReminder] = {
+            var seenIds: [String: EKReminder] = [:]
+            for reminder in appleReminders {
+                let id = reminder.calendarItemIdentifier
+                if let existing = seenIds[id] {
+                    // Keep incomplete over completed
+                    if !reminder.isCompleted && existing.isCompleted {
+                        seenIds[id] = reminder
+                    }
+                    // Otherwise keep existing (first incomplete wins, or first completed if no incomplete)
+                } else {
+                    seenIds[id] = reminder
+                }
+            }
+            return Array(seenIds.values)
+        }()
+
+        // 3. Convert to unified ReminderItem format
+        let appleItems = deduplicatedReminders.map { remindersService.toReminderItem($0) }
         let notionItems = notionPages.map { toReminderItem($0, mapping: mapping) }
 
-        // 3. Load existing sync records
+        // 4. Load existing sync records
         let syncRecords = syncStateStore.getSyncRecords(forMappingId: mapping.id)
 
         print("[SyncEngine] Found \(appleItems.count) Apple reminders, \(notionItems.count) Notion pages, \(syncRecords.count) sync records")
 
-        // 4. Build lookup maps
+        // 5. Build lookup maps
         let appleItemsByReminderId = Dictionary(uniqueKeysWithValues: appleItems.compactMap { item -> (String, ReminderItem)? in
             guard let id = item.appleReminderId else { return nil }
             return (id, item)
@@ -83,8 +102,56 @@ final class SyncEngine {
             return (id, item)
         })
 
+        // Build map of Notion page IDs to existing sync records (for recurring reminder handling)
+        // Use reduce to handle duplicates - keep the record whose Apple reminder still exists and is incomplete,
+        // or the most recently synced if both/neither exist
+        var duplicateSyncRecordIds: [UUID] = []
+        let syncRecordsByNotionId: [String: SyncRecord] = syncRecords.reduce(into: [:]) { dict, record in
+            if let existing = dict[record.notionPageId] {
+                // Duplicate found - decide which to keep
+                let existingAppleItem = appleItemsByReminderId[existing.appleReminderId]
+                let newAppleItem = appleItemsByReminderId[record.appleReminderId]
 
-        // 5. Determine sync actions for all items
+                // Prefer record with incomplete Apple reminder
+                let existingIsIncomplete = existingAppleItem?.isCompleted == false
+                let newIsIncomplete = newAppleItem?.isCompleted == false
+
+                if newIsIncomplete && !existingIsIncomplete {
+                    print("[SyncEngine] Duplicate sync record for Notion page \(record.notionPageId): keeping \(record.appleReminderId) (incomplete), removing \(existing.appleReminderId) (completed)")
+                    duplicateSyncRecordIds.append(existing.id)
+                    dict[record.notionPageId] = record
+                } else if !newIsIncomplete && existingIsIncomplete {
+                    print("[SyncEngine] Duplicate sync record for Notion page \(record.notionPageId): keeping \(existing.appleReminderId) (incomplete), removing \(record.appleReminderId) (completed)")
+                    duplicateSyncRecordIds.append(record.id)
+                    // Keep existing
+                } else {
+                    // Both same completion state - keep more recent
+                    if record.lastSyncDate > existing.lastSyncDate {
+                        print("[SyncEngine] Duplicate sync record for Notion page \(record.notionPageId): keeping \(record.appleReminderId) (more recent), removing \(existing.appleReminderId)")
+                        duplicateSyncRecordIds.append(existing.id)
+                        dict[record.notionPageId] = record
+                    } else {
+                        print("[SyncEngine] Duplicate sync record for Notion page \(record.notionPageId): keeping \(existing.appleReminderId) (more recent), removing \(record.appleReminderId)")
+                        duplicateSyncRecordIds.append(record.id)
+                    }
+                }
+            } else {
+                dict[record.notionPageId] = record
+            }
+        }
+
+        // Clean up duplicate sync records
+        for duplicateId in duplicateSyncRecordIds {
+            do {
+                try syncStateStore.deleteSyncRecord(id: duplicateId)
+                print("[SyncEngine] Deleted duplicate sync record: \(duplicateId)")
+            } catch {
+                print("[SyncEngine] Failed to delete duplicate sync record \(duplicateId): \(error)")
+            }
+        }
+
+
+        // 6. Determine sync actions for all items
         var actions: [(SyncAction, SyncRecord?)] = []
         var processedAppleIds = Set<String>()
         var processedNotionIds = Set<String>()
@@ -108,15 +175,69 @@ final class SyncEngine {
 
         // Process new Apple items (no sync record = never synced before)
         for (appleId, appleItem) in appleItemsByReminderId where !processedAppleIds.contains(appleId) {
-            // Check if there's a matching Notion item by title (first sync scenario)
+
+            // PRIMARY: Try to link via short URL in notes (robust, survives title changes)
+            if let shortId = appleItem.shortId,
+               let existingRecord = syncStateStore.getSyncRecord(byShortId: shortId) {
+                // Found existing sync record via short URL - this is a recurring reminder instance
+                let notionItem = notionItemsByPageId[existingRecord.notionPageId]
+                let existingAppleItem = appleItemsByReminderId[existingRecord.appleReminderId]
+                let existingIsCompleted = existingAppleItem?.isCompleted ?? true
+
+                if !appleItem.isCompleted && existingIsCompleted {
+                    // New incomplete instance should take over from completed instance
+                    var itemWithIds = appleItem
+                    itemWithIds.notionPageId = existingRecord.notionPageId
+                    let previouslyCompleted = notionItem?.isCompleted ?? false
+                    let notionModDate = notionItem?.modificationDate ?? Date()
+                    actions.append((.updateNotion(itemWithIds, previouslyCompleted: previouslyCompleted, notionModificationDate: notionModDate), existingRecord))
+                    print("[SyncEngine] Recurring reminder (via shortId): '\(appleItem.title)' - new incomplete instance \(appleId) replacing completed instance \(existingRecord.appleReminderId)")
+                } else {
+                    // Either both completed, or existing is incomplete - skip this instance
+                    print("[SyncEngine] Recurring reminder skip (via shortId): '\(appleItem.title)' - keeping existing sync record for \(existingRecord.appleReminderId)")
+                }
+                processedNotionIds.insert(existingRecord.notionPageId)
+                continue
+            }
+
+            // FALLBACK: Title-matching for reminders without short URL yet
             let matchingNotionItem = notionItems.first { $0.title == appleItem.title && $0.notionPageId != nil }
 
             if let notionItem = matchingNotionItem, let notionId = notionItem.notionPageId {
+                // Check if there's already a sync record for this Notion page
+                // This handles recurring reminders where multiple Apple instances exist for the same Notion page
+                if let existingRecord = syncRecordsByNotionId[notionId] {
+                    // Sync record already exists - this is likely a recurring reminder with a new instance
+                    // Check if the existing Apple reminder is completed and this one is not
+                    let existingAppleItem = appleItemsByReminderId[existingRecord.appleReminderId]
+                    let existingIsCompleted = existingAppleItem?.isCompleted ?? true
+
+                    if !appleItem.isCompleted && existingIsCompleted {
+                        // New incomplete instance should take over from completed instance
+                        // Update the sync record to point to the new Apple ID
+                        var itemWithIds = appleItem
+                        itemWithIds.notionPageId = notionId
+                        actions.append((.updateNotion(itemWithIds, previouslyCompleted: notionItem.isCompleted, notionModificationDate: notionItem.modificationDate), existingRecord))
+                        print("[SyncEngine] Recurring reminder (via title): '\(appleItem.title)' - new incomplete instance \(appleId) replacing completed instance \(existingRecord.appleReminderId)")
+                    } else {
+                        // Either both are completed, or existing is incomplete - skip this instance
+                        print("[SyncEngine] Recurring reminder skip (via title): '\(appleItem.title)' - keeping existing sync record for \(existingRecord.appleReminderId)")
+                    }
+                    processedNotionIds.insert(notionId)
+                    continue
+                }
+
                 // Found a match by title - decide which version to use
                 if appleItem.modificationDate >= notionItem.modificationDate {
-                    actions.append((.updateNotion(appleItem, previouslyCompleted: notionItem.isCompleted, notionModificationDate: notionItem.modificationDate), nil))
+                    // Copy Notion page ID to the Apple item so we know which page to update
+                    var appleItemWithNotionId = appleItem
+                    appleItemWithNotionId.notionPageId = notionId
+                    actions.append((.updateNotion(appleItemWithNotionId, previouslyCompleted: notionItem.isCompleted, notionModificationDate: notionItem.modificationDate), nil))
                 } else {
-                    actions.append((.updateApple(notionItem, appleModificationDate: appleItem.modificationDate), nil))
+                    // Copy Apple reminder ID to the Notion item so we know which reminder to update
+                    var notionItemWithAppleId = notionItem
+                    notionItemWithAppleId.appleReminderId = appleItem.appleReminderId
+                    actions.append((.updateApple(notionItemWithAppleId, appleModificationDate: appleItem.modificationDate), nil))
                 }
                 processedNotionIds.insert(notionId)
             } else {
@@ -131,7 +252,7 @@ final class SyncEngine {
             actions.append((.createInApple(notionItem), nil))
         }
 
-        // 6. Execute actions
+        // 7. Execute actions
         var stats = SyncStats()
 
         for (action, existingRecord) in actions {
@@ -163,12 +284,12 @@ final class SyncEngine {
             print("[SyncEngine] URL backfill failed: \(error)")
         }
 
-        // 7. Update mapping's last sync date
+        // 8. Update mapping's last sync date
         var updatedMapping = mapping
         updatedMapping.lastSyncDate = Date()
         try syncStateStore.saveSyncMapping(updatedMapping)
 
-        // 8. Save sync history
+        // 9. Save sync history
         let historyEntry = SyncHistoryEntry(
             mappingId: mapping.id,
             operation: .incrementalSync,

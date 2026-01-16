@@ -86,9 +86,11 @@ final class SyncScheduler {
     }
 
     private func scheduleBackgroundRefreshIfNeeded() {
-        // Schedule background refresh when app enters background
-        if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-            appDelegate.scheduleBackgroundTasks()
+        // Schedule background refresh - must be on main thread for UIKit access
+        DispatchQueue.main.async {
+            if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+                appDelegate.scheduleBackgroundTasks()
+            }
         }
     }
 }

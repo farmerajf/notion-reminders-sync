@@ -101,6 +101,19 @@ final class RemindersService {
         try eventStore.save(reminder, commit: true)
     }
 
+    /// Extracts the n:// short ID from reminder notes, if present
+    func extractShortId(from notes: String?) -> String? {
+        guard let notes = notes else { return nil }
+        // Match n:// followed by 8 hex characters
+        let pattern = "n://([a-f0-9]{8})"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: notes, range: NSRange(notes.startIndex..., in: notes)),
+              let range = Range(match.range(at: 1), in: notes) else {
+            return nil
+        }
+        return String(notes[range])
+    }
+
     /// Appends a short n:// URL to the reminder's notes if not already present.
     /// Returns true if the notes were updated, false if URL was already present.
     func appendNotionShortURLToNotes(identifier: String, shortId: String) throws -> Bool {
@@ -150,6 +163,9 @@ final class RemindersService {
             hasDueTime = dueDateComponents.hour != nil
         }
 
+        // Extract short ID from notes (for recurring reminder linking)
+        let shortId = extractShortId(from: reminder.notes)
+
         return ReminderItem(
             title: reminder.title ?? "",
             dueDate: dueDate,
@@ -157,7 +173,8 @@ final class RemindersService {
             priority: ReminderItem.Priority.fromApple(reminder.priority),
             isCompleted: reminder.isCompleted,
             modificationDate: reminder.lastModifiedDate ?? Date(),
-            appleReminderId: reminder.calendarItemIdentifier
+            appleReminderId: reminder.calendarItemIdentifier,
+            shortId: shortId
         )
     }
 
